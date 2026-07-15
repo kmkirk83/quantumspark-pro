@@ -3,10 +3,13 @@ const cors = require("cors");
 const axios = require("axios");
 const { RSI, MACD, BollingerBands, EMA } = require("technicalindicators");
 const OpenAI = require("openai");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET;
 
 app.use(cors());
 app.use(express.json());
@@ -14,6 +17,9 @@ app.use(express.json());
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
+
+// In-memory user store for demonstration
+const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
 
 const COINS = ["bitcoin", "ethereum", "solana", "binancecoin", "cardano", "ripple"];
 const SYMBOLS = {
@@ -36,7 +42,70 @@ async function getHistoricalData(coinId) {
     }
 }
 
-app.get("/api/prices", async (req, res) => {
+// Middleware for JWT authentication
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (token == null) return res.sendStatus(401); // No token
+
+    jwt.verify(token, JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403); // Invalid token
+        req.user = user;
+        next();
+    });
+};
+
+// Middleware for subscription tier enforcement
+const authorizeTier = (requiredTier) => (req, res, next) => {
+    // In a real app, you'd fetch user from DB to get latest tier
+    const userTier = req.user.subscriptionTier; 
+
+    const tiers = { 'free': 0, 'pro': 1, 'enterprise': 2 };
+    if (tiers[userTier] >= tiers[requiredTier]) {
+        next();
+    } else {
+        res.status(403).json({ message: `Access denied. Requires ${requiredTier} subscription.` });
+    }
+};
+
+// User Registration
+app.post('/api/register', async (req, res) => {
+    const { username, password } = req.body;
+    if (!username || !password) {
+        return res.status(400).json({ message: 'Username and password are required' });
+    }
+
+    if (users.find(u => u.username === username)) {
+        return res.status(409).json({ message: 'Username already exists' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = { id: users.length + 1, username, password: hashedPassword, subscriptionTier: 'free' };
+    users.push(newUser);
+
+    res.status(201).json({ message: 'User registered successfully', user: { id: newUser.id, username: newUser.username, subscriptionTier: newUser.subscriptionTier } });
+});
+
+// User Login
+app.post('/api/login', async (req, res) => {
+    const { username, password } = req.body;
+    const user = users.find(u => u.username === username);
+
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+        return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    const accessToken = jwt.sign({ id: user.id, username: user.username, subscriptionTier: user.subscriptionTier }, JWT_SECRET, { expiresIn: '1h' });
+    res.json({ accessToken });
+});
+
+app.get("/api/prices", authenticateToken, async (req, res) => {
     try {
         const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${COINS.join(",")}&vs_currencies=usd&include_24hr_change=true`);
         
@@ -54,7 +123,7 @@ app.get("/api/prices", async (req, res) => {
     }
 });
 
-app.get("/api/indicators/:coinId", async (req, res) => {
+app.get("/api/indicators/:coinId", authenticateToken, authorizeTier('pro'), async (req, res) => {
     const { coinId } = req.params;
     const prices = await getHistoricalData(coinId);
 
@@ -83,9 +152,11 @@ app.get("/api/indicators/:coinId", async (req, res) => {
     });
 });
 
-app.get("/api/signal/:coinId", async (req, res) => {
+app.get("/api/signal/:coinId", authenticateToken, authorizeTier('enterprise'), async (req, res) => {
     const { coinId } = req.params;
-    const indicatorsResponse = await axios.get(`http://localhost:${PORT}/api/indicators/${coinId}`);
+    const indicatorsResponse = await axios.get(`http://localhost:${PORT}/api/indicators/${coinId}`, {
+        headers: { 'Authorization': req.headers['authorization'] } // Pass token for internal call
+    });
     const indicators = indicatorsResponse.data;
 
     if (!indicators) {
