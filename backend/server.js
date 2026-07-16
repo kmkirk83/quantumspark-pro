@@ -5,20 +5,33 @@ const { RSI, MACD, BollingerBands, EMA } = require("technicalindicators");
 const OpenAI = require("openai");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const Stripe = require("stripe");
 require("dotenv").config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
+const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+
+const stripe = new Stripe(STRIPE_SECRET_KEY);
 
 app.use(cors());
-app.use(express.json());
+// Stripe webhook needs the raw body, so apply express.json() conditionally
+app.use((req, res, next) => {
+    if (req.originalUrl === '/webhook') {
+        next(); // Skip express.json() for webhook route
+    } else {
+        express.json()(req, res, next);
+    }
+});
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
 // In-memory user store for demonstration
+// In a real application, this would be a database
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
 
 const COINS = ["bitcoin", "ethereum", "solana", "binancecoin", "cardano", "ripple"];
@@ -44,8 +57,8 @@ async function getHistoricalData(coinId) {
 
 // Middleware for JWT authentication
 const authenticateToken = (req, res, next) => {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const authHeader = req.headers["authorization"];
+    const token = authHeader && authHeader.split(" ")[1];
 
     if (token == null) return res.sendStatus(401); // No token
 
@@ -59,9 +72,12 @@ const authenticateToken = (req, res, next) => {
 // Middleware for subscription tier enforcement
 const authorizeTier = (requiredTier) => (req, res, next) => {
     // In a real app, you'd fetch user from DB to get latest tier
-    const userTier = req.user.subscriptionTier; 
+    const user = users.find(u => u.id === req.user.id); // Find user from in-memory store
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const tiers = { 'free': 0, 'pro': 1, 'enterprise': 2 };
+    const userTier = user.subscriptionTier; 
+
+    const tiers = { "free": 0, "pro": 1, "enterprise": 2 };
     if (tiers[userTier] >= tiers[requiredTier]) {
         next();
     } else {
@@ -70,39 +86,112 @@ const authorizeTier = (requiredTier) => (req, res, next) => {
 };
 
 // User Registration
-app.post('/api/register', async (req, res) => {
+app.post("/api/register", async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
-        return res.status(400).json({ message: 'Username and password are required' });
+        return res.status(400).json({ message: "Username and password are required" });
     }
 
     if (users.find(u => u.username === username)) {
-        return res.status(409).json({ message: 'Username already exists' });
+        return res.status(409).json({ message: "Username already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = { id: users.length + 1, username, password: hashedPassword, subscriptionTier: 'free' };
+    const newUser = { id: users.length + 1, username, password: hashedPassword, subscriptionTier: "free" };
     users.push(newUser);
 
-    res.status(201).json({ message: 'User registered successfully', user: { id: newUser.id, username: newUser.username, subscriptionTier: newUser.subscriptionTier } });
+    res.status(201).json({ message: "User registered successfully", user: { id: newUser.id, username: newUser.username, subscriptionTier: newUser.subscriptionTier } });
 });
 
 // User Login
-app.post('/api/login', async (req, res) => {
+app.post("/api/login", async (req, res) => {
     const { username, password } = req.body;
     const user = users.find(u => u.username === username);
 
     if (!user) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ message: "Invalid credentials" });
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-        return res.status(400).json({ message: 'Invalid credentials' });
+        return res.status(400).json({ message: "Invalid credentials" });
     }
 
-    const accessToken = jwt.sign({ id: user.id, username: user.username, subscriptionTier: user.subscriptionTier }, JWT_SECRET, { expiresIn: '1h' });
+    const accessToken = jwt.sign({ id: user.id, username: user.username, subscriptionTier: user.subscriptionTier }, JWT_SECRET, { expiresIn: "1h" });
     res.json({ accessToken });
+});
+
+// Stripe Checkout Session Creation
+app.post("/api/create-checkout-session", authenticateToken, async (req, res) => {
+    const { tier } = req.body; // 'pro' or 'enterprise'
+    const userId = req.user.id;
+
+    let priceId;
+    let metadata = { userId: userId.toString(), tier: tier };
+
+    if (tier === "pro") {
+        priceId = "price_12345"; // Replace with your actual Stripe Price ID for Pro
+    } else if (tier === "enterprise") {
+        priceId = "price_67890"; // Replace with your actual Stripe Price ID for Enterprise
+    } else {
+        return res.status(400).json({ error: "Invalid subscription tier" });
+    }
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ["card"],
+            line_items: [
+                {
+                    price: priceId,
+                    quantity: 1,
+                },
+            ],
+            mode: "subscription",
+            success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `http://localhost:3000/cancel`,
+            metadata: metadata,
+        });
+        res.json({ url: session.url });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// Stripe Webhook Handler
+app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
+    const sig = req.headers["stripe-signature"];
+
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, STRIPE_WEBHOOK_SECRET);
+    } catch (err) {
+        console.error(`Webhook Error: ${err.message}`);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    // Handle the event
+    switch (event.type) {
+        case "checkout.session.completed":
+            const session = event.data.object;
+            const userId = parseInt(session.metadata.userId);
+            const newTier = session.metadata.tier;
+
+            // Update user's subscription tier in your database (in-memory for this example)
+            const userIndex = users.findIndex(u => u.id === userId);
+            if (userIndex !== -1) {
+                users[userIndex].subscriptionTier = newTier;
+                console.log(`User ${userId} updated to ${newTier} tier.`);
+            } else {
+                console.error(`User ${userId} not found for subscription update.`);
+            }
+            break;
+        // ... handle other event types
+        default:
+            console.log(`Unhandled event type ${event.type}`);
+    }
+
+    res.send();
 });
 
 app.get("/api/prices", authenticateToken, async (req, res) => {
@@ -123,7 +212,7 @@ app.get("/api/prices", authenticateToken, async (req, res) => {
     }
 });
 
-app.get("/api/indicators/:coinId", authenticateToken, authorizeTier('pro'), async (req, res) => {
+app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), async (req, res) => {
     const { coinId } = req.params;
     const prices = await getHistoricalData(coinId);
 
@@ -152,10 +241,13 @@ app.get("/api/indicators/:coinId", authenticateToken, authorizeTier('pro'), asyn
     });
 });
 
-app.get("/api/signal/:coinId", authenticateToken, authorizeTier('enterprise'), async (req, res) => {
+app.get("/api/signal/:coinId", authenticateToken, authorizeTier("enterprise"), async (req, res) => {
     const { coinId } = req.params;
+    // Note: When calling internal APIs from within the same server, you might not need to pass the token
+    // if the internal call bypasses the authentication middleware or uses a different mechanism.
+    // For simplicity, we're passing it here as if it were an external call.
     const indicatorsResponse = await axios.get(`http://localhost:${PORT}/api/indicators/${coinId}`, {
-        headers: { 'Authorization': req.headers['authorization'] } // Pass token for internal call
+        headers: { "Authorization": req.headers["authorization"] } // Pass token for internal call
     });
     const indicators = indicatorsResponse.data;
 
