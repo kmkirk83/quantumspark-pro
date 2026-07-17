@@ -19,7 +19,7 @@ const stripe = new Stripe(STRIPE_SECRET_KEY);
 app.use(cors());
 // Stripe webhook needs the raw body, so apply express.json() conditionally
 app.use((req, res, next) => {
-    if (req.originalUrl === '/webhook') {
+    if (req.originalUrl === "/webhook") {
         next(); // Skip express.json() for webhook route
     } else {
         express.json()(req, res, next);
@@ -45,10 +45,10 @@ const SYMBOLS = {
 };
 
 // Helper to fetch historical data for indicators
-async function getHistoricalData(coinId) {
+async function getHistoricalData(coinId, days = 30) {
     try {
-        const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=30&interval=daily`);
-        return response.data.prices.map(p => p[1]); // Return only closing prices
+        const response = await axios.get(`https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`);
+        return response.data.prices.map(p => ({ timestamp: p[0], price: p[1] })); // Return timestamp and price
     } catch (error) {
         console.error(`Error fetching historical data for ${coinId}:`, error.message);
         return [];
@@ -214,7 +214,8 @@ app.get("/api/prices", authenticateToken, async (req, res) => {
 
 app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), async (req, res) => {
     const { coinId } = req.params;
-    const prices = await getHistoricalData(coinId);
+    const historicalData = await getHistoricalData(coinId, 30);
+    const prices = historicalData.map(d => d.price);
 
     if (prices.length < 30) {
         return res.status(400).json({ error: "Not enough data for indicators" });
@@ -276,6 +277,94 @@ app.get("/api/signal/:coinId", authenticateToken, authorizeTier("enterprise"), a
         console.error("Error generating signal with OpenAI:", error.message);
         res.status(500).json({ error: "Failed to generate signal" });
     }
+});
+
+// Backtesting Engine
+app.get("/api/backtest/:coinId", authenticateToken, authorizeTier("enterprise"), async (req, res) => {
+    const { coinId } = req.params;
+    const historicalData = await getHistoricalData(coinId, 30); // Get 30 days of data
+
+    if (historicalData.length < 30) {
+        return res.status(400).json({ error: "Not enough historical data for backtesting (requires 30 days)." });
+    }
+
+    let trades = [];
+    let currentPosition = 0; // 0: no position, 1: long
+    let pnl = 0;
+    let entryPrice = 0;
+    let dailyReturns = [];
+
+    // Iterate through historical data to simulate trading
+    for (let i = 29; i < historicalData.length; i++) { // Start after enough data for indicators
+        const pricesSlice = historicalData.slice(0, i + 1).map(d => d.price);
+        const currentPrice = historicalData[i].price;
+
+        if (pricesSlice.length < 20) continue; // Ensure enough data for BB and EMA
+
+        const rsi = RSI.calculate({ values: pricesSlice, period: 14 });
+        const macd = MACD.calculate({
+            values: pricesSlice,
+            fastPeriod: 12,
+            slowPeriod: 26,
+            signalPeriod: 9,
+            SimpleMAOscillator: false,
+            SimpleMASignal: false
+        });
+        const bb = BollingerBands.calculate({ values: pricesSlice, period: 20, stdDev: 2 });
+        const ema = EMA.calculate({ values: pricesSlice, period: 20 });
+
+        const latestRSI = rsi[rsi.length - 1];
+        const latestMACD = macd[macd.length - 1];
+        const latestBB = bb[bb.length - 1];
+        const latestEMA = ema[ema.length - 1];
+
+        // Simple trading strategy based on RSI and MACD for backtesting
+        let signal = "HOLD";
+        if (latestRSI < 30 && latestMACD.histogram > 0) { // Oversold and bullish momentum
+            signal = "BUY";
+        } else if (latestRSI > 70 && latestMACD.histogram < 0) { // Overbought and bearish momentum
+            signal = "SELL";
+        }
+
+        if (signal === "BUY" && currentPosition === 0) {
+            currentPosition = 1;
+            entryPrice = currentPrice;
+            trades.push({ type: "BUY", price: currentPrice, date: new Date(historicalData[i].timestamp) });
+        } else if (signal === "SELL" && currentPosition === 1) {
+            currentPosition = 0;
+            const profit = currentPrice - entryPrice;
+            pnl += profit;
+            dailyReturns.push(profit / entryPrice); // Calculate daily return
+            trades.push({ type: "SELL", price: currentPrice, date: new Date(historicalData[i].timestamp), profit: profit });
+        }
+    }
+
+    // If still in a position at the end, close it
+    if (currentPosition === 1) {
+        const finalPrice = historicalData[historicalData.length - 1].price;
+        const profit = finalPrice - entryPrice;
+        pnl += profit;
+        dailyReturns.push(profit / entryPrice);
+        trades.push({ type: "SELL", price: finalPrice, date: new Date(historicalData[historicalData.length - 1].timestamp), profit: profit });
+    }
+
+    const winningTrades = trades.filter(t => t.profit > 0).length;
+    const totalTrades = trades.filter(t => t.type === "SELL").length;
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+    // Calculate Sharpe Ratio (simplified)
+    const averageDailyReturn = dailyReturns.reduce((sum, r) => sum + r, 0) / dailyReturns.length;
+    const stdDevDailyReturn = Math.sqrt(dailyReturns.map(r => Math.pow(r - averageDailyReturn, 2)).reduce((sum, s) => sum + s, 0) / dailyReturns.length);
+    const sharpeRatio = stdDevDailyReturn > 0 ? (averageDailyReturn * Math.sqrt(365)) / stdDevDailyReturn : 0; // Annualized Sharpe
+
+    res.json({
+        coinId,
+        backtestPeriod: "30 days",
+        totalPnL: pnl,
+        winRate: winRate,
+        sharpeRatio: sharpeRatio,
+        trades: trades
+    });
 });
 
 app.get("/", (req, res) => {
