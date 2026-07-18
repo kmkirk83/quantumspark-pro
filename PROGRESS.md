@@ -8,7 +8,7 @@
 - [x] 5) JWT auth + server-side subscription tier enforcement
 - [x] 6) Stripe checkout for Pro $29.99/mo and Enterprise $99.99/mo with test keys
 - [x] 7) 30-day backtesting engine with win rate/PnL/Sharpe ratio
-- [ ] 8) Frontend dashboard with real Chart.js charts, live ticker, signal feed
+- [x] 8) Frontend dashboard with real Chart.js charts, live ticker, signal feed
 - [ ] 9) Legal disclaimers + GitHub Pages deployment
 
 ## Completed Today
@@ -21,3 +21,4 @@
 - Added server-side subscription tier enforcement for API endpoints (free, pro, enterprise).
 - Integrated Stripe checkout for Pro and Enterprise subscriptions, including session creation and webhook handling.
 - Developed a 30-day backtesting engine with win rate, PnL, and Sharpe ratio calculation.
+- Implemented the frontend dashboard with Chart.js for price visualization, a live ticker for real-time price updates, and a signal feed for AI-generated trading signals.
