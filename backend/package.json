@@ -5,7 +5,7 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "lint": "node --check server.js",
-    "build": "node -e \"const fs=require('fs');fs.accessSync('server.js'); console.log('Backend source verified.');\""
+    "build": "test -f server.js && echo 'Backend source verified.'"
   },
   "keywords": [],
   "author": "",

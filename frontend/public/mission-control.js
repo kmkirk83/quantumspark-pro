@@ -18,6 +18,15 @@ const cardsContainer = document.getElementById("mission-control-cards");
 const checklistContainer = document.getElementById("readiness-checklist");
 const roadmapContainer = document.getElementById("next-layer-roadmap");
 
+function escapeHtml(value) {
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll("\"", "&quot;")
+        .replaceAll("'", "&#39;");
+}
+
 const readinessScore = calculateScore(readinessChecks);
 const completedChecks = readinessChecks.filter((check) => check.complete);
 const pendingChecks = readinessChecks.filter((check) => !check.complete);
@@ -52,8 +61,8 @@ checklistContainer.innerHTML = readinessChecks
     .map((check) => `
         <li class="flex items-start justify-between gap-4 rounded-xl border border-gray-700 bg-gray-800/70 px-4 py-3">
             <div>
-                <p class="font-semibold text-white">${check.name}</p>
-                <p class="text-sm text-gray-400">${check.category}</p>
+                <p class="font-semibold text-white">${escapeHtml(check.name)}</p>
+                <p class="text-sm text-gray-400">${escapeHtml(check.category)}</p>
             </div>
             <span class="rounded-full px-3 py-1 text-xs font-semibold ${check.complete ? "bg-emerald-500/20 text-emerald-300" : "bg-amber-500/20 text-amber-300"}">
                 ${check.complete ? "Complete" : "Planned"}
@@ -65,8 +74,8 @@ checklistContainer.innerHTML = readinessChecks
 roadmapContainer.innerHTML = pendingChecks
     .map((check) => `
         <li class="rounded-xl border border-gray-700 bg-gray-800/50 px-4 py-3">
-            <p class="font-semibold text-white">${check.name}</p>
-            <p class="text-sm text-gray-400">${check.category}</p>
+            <p class="font-semibold text-white">${escapeHtml(check.name)}</p>
+            <p class="text-sm text-gray-400">${escapeHtml(check.category)}</p>
         </li>
     `)
     .join("");
