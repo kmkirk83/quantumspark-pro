@@ -39,7 +39,7 @@ export async function fetchRepoInfo(
   const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
   const headers: HeadersInit = { Accept: "application/vnd.github+json" };
   if (token) {
-    headers["Authorization"] = ["Bearer", token].join(" ");
+    headers["Authorization"] = "Bearer " + token;
   }
 
   const response = await fetch(url, { headers, next: { revalidate: 60 } });
@@ -64,7 +64,7 @@ export async function fetchLatestWorkflowRun(
   const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/actions/runs?per_page=1`;
   const headers: HeadersInit = { Accept: "application/vnd.github+json" };
   if (token) {
-    headers["Authorization"] = ["Bearer", token].join(" ");
+    headers["Authorization"] = "Bearer " + token;
   }
 
   const response = await fetch(url, { headers, next: { revalidate: 60 } });

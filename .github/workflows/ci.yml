@@ -29,7 +29,6 @@ jobs:
 
       - name: Install mission control dependencies
         run: npm ci
-        working-directory: .
 
       - name: Test frontend
         run: npm test
@@ -57,4 +56,3 @@ jobs:
 
       - name: Build mission control
         run: npm run build
-        working-directory: .
