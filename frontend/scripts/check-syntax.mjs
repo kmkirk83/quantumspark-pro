@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { extname, join } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const roots = ["public", "tests"];
@@ -14,7 +14,7 @@ function collectFiles(directory) {
             return collectFiles(fullPath);
         }
 
-        return allowedExtensions.has(fullPath.slice(fullPath.lastIndexOf("."))) ? [fullPath] : [];
+        return allowedExtensions.has(extname(fullPath)) ? [fullPath] : [];
     });
 }
 
