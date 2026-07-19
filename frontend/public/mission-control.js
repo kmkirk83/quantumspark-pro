@@ -1,4 +1,5 @@
 import { renderDashboardCard } from "./components/dashboard-card.js";
+import { escapeHtml } from "./lib/html-utils.js";
 import { calculateScore } from "./lib/scoring.js";
 
 const readinessChecks = [
@@ -17,15 +18,6 @@ const readinessChecks = [
 const cardsContainer = document.getElementById("mission-control-cards");
 const checklistContainer = document.getElementById("readiness-checklist");
 const roadmapContainer = document.getElementById("next-layer-roadmap");
-
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll("\"", "&quot;")
-        .replaceAll("'", "&#39;");
-}
 
 const readinessScore = calculateScore(readinessChecks);
 const completedChecks = readinessChecks.filter((check) => check.complete);
