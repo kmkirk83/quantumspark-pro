@@ -36,8 +36,7 @@ export async function fetchRepoInfo(
   repo: string,
   token?: string
 ): Promise<RepoInfo> {
-  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}`;
-  const headers: HeadersInit = { Accept: "application/vnd.github+json" };
+  const url = `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
   if (token) {
     headers["Authorization"] = "Bearer " + token;
   }
