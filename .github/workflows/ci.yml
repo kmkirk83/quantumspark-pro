@@ -54,5 +54,12 @@ jobs:
         run: npm run build
         working-directory: backend
 
+<<<<<<< HEAD
       - name: Build mission control
+=======
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Build root TypeScript
+>>>>>>> origin/main
         run: npm run build
