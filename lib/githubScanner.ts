@@ -60,7 +60,7 @@ export async function fetchLatestWorkflowRun(
   repo: string,
   token?: string
 ): Promise<WorkflowRun | null> {
-  const url = `${GITHUB_API_BASE}/repos/${owner}/${repo}/actions/runs?per_page=1`;
+  const url = `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs?per_page=1`;
   const headers: HeadersInit = { Accept: "application/vnd.github+json" };
   if (token) {
     headers["Authorization"] = "Bearer " + token;
