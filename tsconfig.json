@@ -1,6 +1,5 @@
 {
   "compilerOptions": {
-<<<<<<< HEAD
     "target": "ES2017",
     "lib": [
       "dom",
@@ -41,18 +40,4 @@
     "frontend",
     "backend"
   ]
-=======
-    "target": "ES2022",
-    "lib": ["ES2022", "DOM"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "jsx": "react",
-    "noEmit": true
-  },
-  "include": ["app", "components", "lib"],
-  "exclude": ["node_modules", "frontend", "backend"]
->>>>>>> origin/main
 }
