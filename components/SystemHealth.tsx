@@ -1,33 +1,32 @@
-import React from "react";
 import { DashboardCard } from "./DashboardCard";
-import { calculateScore, type Check } from "../lib/scoring";
+import { calculateScore, primaryFocusCategory } from "@/lib/scoring";
+import type { ReadinessCheck } from "@/lib/scoring";
 
-export interface SystemHealthProps {
-  checks: Check[];
+interface SystemHealthProps {
+  checks: ReadinessCheck[];
 }
 
 export function SystemHealth({ checks }: SystemHealthProps) {
   const score = calculateScore(checks);
   const completed = checks.filter((c) => c.complete).length;
-  const pending = checks.length - completed;
-  const overallStatus = score >= 70 ? "Healthy" : "Needs attention";
+  const focus = primaryFocusCategory(checks);
 
   return (
     <section className="grid gap-6 md:grid-cols-3">
       <DashboardCard
         title="Readiness score"
         value={`${score}%`}
-        status={overallStatus}
+        status={score >= 70 ? "Healthy" : "Needs attention"}
       />
       <DashboardCard
         title="Completed checks"
         value={`${completed}/${checks.length}`}
-        status="Tracking"
+        status="Foundation ready"
       />
       <DashboardCard
-        title="Pending checks"
-        value={String(pending)}
-        status={pending === 0 ? "Healthy" : "Needs attention"}
+        title="Primary focus"
+        value={focus}
+        status="Next investment"
       />
     </section>
   );

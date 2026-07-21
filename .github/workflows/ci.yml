@@ -27,6 +27,14 @@ jobs:
         run: npm ci
         working-directory: backend
 
+      - name: Install mission control dependencies
+        run: npm ci
+
+      - name: Test mission control
+        run: npm test
+
+      - name: Lint mission control
+        run: npm run lint
       - name: Test frontend
         run: npm test
         working-directory: frontend
@@ -51,8 +59,5 @@ jobs:
         run: npm run build
         working-directory: backend
 
-      - name: Install root dependencies
-        run: npm ci
-
-      - name: Build root TypeScript
+      - name: Build mission control
         run: npm run build

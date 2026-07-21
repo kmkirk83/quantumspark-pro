@@ -16,6 +16,17 @@ Rules:
 - Use production-grade practices.
 - Prefer measurable improvements.
 
+## Repository structure
+
+- `.github/workflows/ci.yml` — CI pipeline (frontend, backend, mission control)
+- `frontend/` — Vanilla JS trading dashboard (tests: `npm test`, lint: `npm run lint`, build: `npm run build`)
+- `backend/` — Express.js API server (tests: `npm test`, lint: `npm run lint`, build: `npm run build`)
+- `app/` — Next.js App Router pages and API routes
+- `app/api/health/route.ts` — Health check endpoint (`GET /api/health`)
+- `components/` — Shared React/TypeScript UI components
+- `lib/scoring.ts` — Readiness score calculation
+- `lib/githubScanner.ts` — GitHub repository scanning utilities
+
 Before coding:
 1. Analyze existing architecture.
 2. Identify risks.

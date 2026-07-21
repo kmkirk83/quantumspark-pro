@@ -1,21 +1,19 @@
-export interface HealthStatus {
-  status: "ok" | "degraded" | "down";
+import { NextResponse } from "next/server";
+
+export interface HealthResponse {
+  status: "ok" | "error";
   timestamp: string;
   version: string;
-  services: {
-    api: "up" | "down";
-  };
+  uptime: number;
 }
 
-export function GET(): Response {
-  const health: HealthStatus = {
+export async function GET(): Promise<NextResponse<HealthResponse>> {
+  const response: HealthResponse = {
     status: "ok",
     timestamp: new Date().toISOString(),
-    version: process.env["npm_package_version"] ?? "1.0.0",
-    services: {
-      api: "up",
-    },
+    version: process.env.npm_package_version ?? "1.0.0",
+    uptime: Math.floor(process.uptime()),
   };
 
-  return Response.json(health);
+  return NextResponse.json(response, { status: 200 });
 }
