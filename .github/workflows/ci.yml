@@ -30,6 +30,11 @@ jobs:
       - name: Install mission control dependencies
         run: npm ci
 
+      - name: Test mission control
+        run: npm test
+
+      - name: Lint mission control
+        run: npm run lint
       - name: Test frontend
         run: npm test
         working-directory: frontend
