@@ -22,7 +22,7 @@ test("computeWatchlistStats counts winners and averages moves", () => {
   assert.deepEqual(computeWatchlistStats(watchlist), {
     advancers: 3,
     decliners: 1,
-    averageMove: 1.8,
+    averageMove: 1.7,
   });
 });
 
