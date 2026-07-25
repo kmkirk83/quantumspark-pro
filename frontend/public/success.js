@@ -4,6 +4,7 @@ import { getStoredToken } from "./lib/session.js";
 const successState = document.getElementById("success-state");
 const searchParams = new URLSearchParams(window.location.search);
 const sessionId = searchParams.get("session_id");
+const SESSION_ID_PATTERN = /^cs_(test_|live_)?[A-Za-z0-9_]+$/;
 
 function render(message) {
     successState.innerHTML = message;
@@ -12,6 +13,11 @@ function render(message) {
 async function loadSession() {
     if (!sessionId) {
         render('<p class="text-red-300">Missing checkout session id. Start again from the account page.</p>');
+        return;
+    }
+
+    if (!SESSION_ID_PATTERN.test(sessionId)) {
+        render('<p class="text-red-300">The checkout session id is malformed. Start again from the account page.</p>');
         return;
     }
 

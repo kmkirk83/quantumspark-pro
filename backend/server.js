@@ -26,6 +26,7 @@ const {
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
 } = require("./lib/checkout-session");
+const { buildIndicatorsResponse } = require("./lib/indicator-response");
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -48,7 +49,7 @@ const openai = new OpenAI({
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
 const sessionReadRateLimit = rateLimit({
     windowMs: 60 * 1000,
-    limit: 30,
+    limit: 60,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { message: "Too many session requests. Please try again in a minute." },
@@ -302,15 +303,13 @@ app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), asyn
     const bb = BollingerBands.calculate({ values: prices, period: 20, stdDev: 2 });
     const ema = EMA.calculate({ values: prices, period: 20 });
 
-    res.json({
-        // Preserve the historical price array for the frontend chart alongside the indicator snapshot.
+    res.json(buildIndicatorsResponse({
         prices,
-        rsi: rsi[rsi.length - 1],
-        macd: macd[macd.length - 1],
-        bollingerBands: bb[bb.length - 1],
-        ema: ema[ema.length - 1],
-        currentPrice: prices[prices.length - 1]
-    });
+        rsi,
+        macd,
+        bollingerBands: bb,
+        ema,
+    }));
 });
 
 app.get("/api/signal/:coinId", authenticateToken, authorizeTier("enterprise"), async (req, res) => {

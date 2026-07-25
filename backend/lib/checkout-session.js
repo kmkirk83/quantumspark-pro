@@ -71,7 +71,7 @@ function syncSubscriptionFromCheckoutSession(users, session) {
         return null;
     }
 
-    const isSuccessful = session.status === "complete" || session.payment_status === "paid";
+    const isSuccessful = session.status === "complete" && session.payment_status === "paid";
     const userId = Number.parseInt(session.metadata?.userId, 10);
     const newTier = session.metadata?.tier;
 
