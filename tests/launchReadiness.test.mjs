@@ -52,7 +52,7 @@ test("calculateLaunchScore weights critical blockers more heavily", () => {
       "persistent-auth",
       "dashboard-contracts",
     ]),
-    47
+    50
   );
 });
 
