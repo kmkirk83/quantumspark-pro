@@ -107,6 +107,15 @@ test("validateRepositoryParameters rejects invalid owner names", () => {
   );
 });
 
+test("validateRepositoryParameters rejects owner names that end with hyphens", () => {
+  assert.deepEqual(
+    recommendationService.validateRepositoryParameters("vercel-", "next.js"),
+    {
+      error: "owner contains invalid characters",
+    }
+  );
+});
+
 test("validateRepositoryParameters rejects invalid repo names", () => {
   assert.deepEqual(
     recommendationService.validateRepositoryParameters("vercel", "next/js"),

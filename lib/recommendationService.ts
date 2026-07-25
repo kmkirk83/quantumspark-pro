@@ -19,8 +19,9 @@ const VALID_FOCUSES: AgentFocus[] = [
   "growth",
   "planning",
 ];
+const MAX_OWNER_LENGTH = 39;
 const MAX_REPOSITORY_IDENTIFIER_LENGTH = 100;
-const OWNER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const OWNER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
 const REPO_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
 
 export interface RepositorySnapshot {
@@ -104,9 +105,9 @@ export function validateRepositoryParameters(
     return {};
   }
 
-  if (normalizedOwner.length > 39) {
+  if (normalizedOwner.length > MAX_OWNER_LENGTH) {
     return {
-      error: "owner must be 39 characters or fewer",
+      error: `owner must be ${MAX_OWNER_LENGTH} characters or fewer`,
     };
   }
 
