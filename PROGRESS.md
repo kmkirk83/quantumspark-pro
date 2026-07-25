@@ -22,3 +22,11 @@
 - Integrated Stripe checkout for Pro and Enterprise subscriptions, including session creation and webhook handling.
 - Developed a 30-day backtesting engine with win rate, PnL, and Sharpe ratio calculation.
 - Implemented the frontend dashboard with Chart.js for price visualization, a live ticker for real-time price updates, and a signal feed for AI-generated trading signals.
+
+## Latest Fix Verification (2026-07-25)
+- Fixed Mission Control scanner bug in `lib/githubScanner.ts` where `headers` was used before declaration in `fetchRepoInfo()`.
+- Added regression coverage in `tests/githubScanner.test.mjs` to verify header declaration order in `fetchRepoInfo()`.
+- Validation run results:
+  - Root `npm test`: ✅ pass (including new GitHub scanner regression test)
+  - Root `npm run lint`: ⚠️ fails in current branch environment because `next` binary is unavailable until lockfile/dependency sync is corrected (`npm ci` currently fails due package-lock mismatch)
+  - Root `npm run build`: ⚠️ blocked by the same dependency sync issue
