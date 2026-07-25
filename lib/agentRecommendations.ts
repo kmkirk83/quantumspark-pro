@@ -32,6 +32,18 @@ function orderTargets(...targets: RepoTarget[]): RepoTarget[] {
   return REPO_TARGET_ORDER.filter((target) => targets.includes(target));
 }
 
+const FIT_SCORES = {
+  bestInClass: 95,
+  excellent: 90,
+  veryStrong: 85,
+  strong: 80,
+  solid: 70,
+  situational: 65,
+  growthStage: 60,
+  lowerPriority: 45,
+  migrationOnly: 40,
+} as const;
+
 export const REPO_TARGET_DESCRIPTIONS: Record<RepoTarget, string> = {
   "whole-repo": "Cross-cutting coverage for the full QuantumSpark Pro stack.",
   frontend: "Vanilla JS trading dashboard focused on UX and release safety.",
@@ -43,7 +55,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Sonar",
     rank: 1,
-    score: 95,
+    score: FIT_SCORES.bestInClass,
     focus: "quality",
     bestFor: "Always-on code quality, bug finding, and PR guardrails.",
     summary:
@@ -60,7 +72,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Endor Labs",
     rank: 2,
-    score: 90,
+    score: FIT_SCORES.excellent,
     focus: "security",
     bestFor: "Dependency and software supply chain protection.",
     summary:
@@ -76,7 +88,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "LaunchDarkly",
     rank: 3,
-    score: 85,
+    score: FIT_SCORES.veryStrong,
     focus: "release",
     bestFor: "Feature flags, gradual rollouts, and safer launches.",
     summary:
@@ -92,7 +104,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Bright Security",
     rank: 4,
-    score: 80,
+    score: FIT_SCORES.strong,
     focus: "security",
     bestFor: "Dynamic testing of exposed web and API attack surfaces.",
     summary:
@@ -107,7 +119,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Octopus Deploy",
     rank: 5,
-    score: 70,
+    score: FIT_SCORES.solid,
     focus: "release",
     bestFor: "Deployment orchestration and environment promotion.",
     summary:
@@ -123,7 +135,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "PagerDuty",
     rank: 6,
-    score: 65,
+    score: FIT_SCORES.situational,
     focus: "operations",
     bestFor: "Incident response and production alert routing.",
     summary:
@@ -139,7 +151,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Amplitude",
     rank: 7,
-    score: 60,
+    score: FIT_SCORES.growthStage,
     focus: "growth",
     bestFor: "Product analytics and feature adoption insight.",
     summary:
@@ -154,7 +166,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Miro",
     rank: 8,
-    score: 45,
+    score: FIT_SCORES.lowerPriority,
     focus: "planning",
     bestFor: "Planning, diagrams, and cross-team collaboration.",
     summary:
@@ -168,7 +180,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   {
     name: "Packfiles",
     rank: 9,
-    score: 40,
+    score: FIT_SCORES.migrationOnly,
     focus: "planning",
     bestFor: "Migration and modernization support.",
     summary:

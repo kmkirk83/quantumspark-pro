@@ -31,7 +31,7 @@ async function loadRecommendationsModule() {
 
 const tempDirectories = [];
 let moduleVersion = 0;
-const recommendationsModule = await loadRecommendationsModule();
+let recommendationsModule;
 
 test.after(async () => {
   await Promise.all(
@@ -39,6 +39,10 @@ test.after(async () => {
       rm(directory, { recursive: true, force: true })
     )
   );
+});
+
+test.before(async () => {
+  recommendationsModule = await loadRecommendationsModule();
 });
 
 test("getRecommendationsForTarget returns ranked matches for backend", () => {

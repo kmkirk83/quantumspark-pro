@@ -84,7 +84,7 @@ export function AgentLaunchpad() {
                       {REPO_TARGET_LABELS[candidate]}
                     </span>
                     <span className="text-xs uppercase tracking-[0.2em] text-gray-400">
-                      {candidate}
+                      {REPO_TARGET_LABELS[candidate]}
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-gray-400">
