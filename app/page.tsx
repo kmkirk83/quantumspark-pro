@@ -1,4 +1,5 @@
 import { AgentLaunchpad } from "@/components/AgentLaunchpad";
+import { IntegrationWorkbench } from "@/components/IntegrationWorkbench";
 import { SystemHealth } from "@/components/SystemHealth";
 import type { ReadinessCheck } from "@/lib/scoring";
 
@@ -80,6 +81,10 @@ export default function MissionControlPage() {
 
       <div className="mt-10">
         <AgentLaunchpad />
+      </div>
+
+      <div className="mt-10">
+        <IntegrationWorkbench />
       </div>
     </main>
   );

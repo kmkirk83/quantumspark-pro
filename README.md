@@ -47,4 +47,11 @@ npm run build
 ## Notes
 
 - `lib/githubScanner.ts` fetches GitHub repository metadata and the latest workflow run for Mission Control.
+- `GET /api/agent-recommendations` exposes the ranking engine as a reusable integration for other repositories. It accepts `owner`, `repo`, `focus`, and `targets` query params and returns a JSON recommendation payload.
 - The root lockfile must stay in sync with `package.json` because CI uses `npm ci` for the Mission Control app.
+
+### Example
+
+```text
+/api/agent-recommendations?owner=vercel&repo=next.js&focus=security&targets=whole-repo,app
+```
