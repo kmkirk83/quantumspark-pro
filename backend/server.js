@@ -1,5 +1,7 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 const axios = require("axios");
 const { RSI, MACD, BollingerBands, EMA } = require("technicalindicators");
 const OpenAI = require("openai");
@@ -7,6 +9,14 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Stripe = require("stripe");
 require("dotenv").config();
+
+// Validate required environment variables at startup
+const REQUIRED_ENV_VARS = ["JWT_SECRET", "STRIPE_SECRET_KEY", "STRIPE_WEBHOOK_SECRET", "OPENAI_API_KEY"];
+const missingVars = REQUIRED_ENV_VARS.filter((v) => !process.env[v]);
+if (missingVars.length > 0) {
+    console.error(`Missing required environment variables: ${missingVars.join(", ")}`);
+    process.exit(1);
+}
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,7 +26,22 @@ const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
-app.use(cors());
+// Security headers
+app.use(helmet());
+
+// CORS — restrict to the configured frontend origin
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
+app.use(cors({ origin: ALLOWED_ORIGIN, credentials: true }));
+
+// Rate limiter for auth endpoints (100 requests per 15 minutes per IP)
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: "Too many requests, please try again later." },
+});
+
 // Stripe webhook needs the raw body, so apply express.json() conditionally
 app.use((req, res, next) => {
     if (req.originalUrl === "/webhook") {
@@ -55,6 +80,37 @@ async function getHistoricalData(coinId, days = 30) {
     }
 }
 
+// Shared helper that computes the latest indicator snapshot for a coin.
+// Used by both the /api/indicators and /api/signal routes to avoid a self-referencing HTTP call.
+async function computeIndicators(coinId) {
+    const historicalData = await getHistoricalData(coinId, 30);
+    const prices = historicalData.map(d => d.price);
+
+    if (prices.length < 30) {
+        return null;
+    }
+
+    const rsi = RSI.calculate({ values: prices, period: 14 });
+    const macd = MACD.calculate({
+        values: prices,
+        fastPeriod: 12,
+        slowPeriod: 26,
+        signalPeriod: 9,
+        SimpleMAOscillator: false,
+        SimpleMASignal: false
+    });
+    const bb = BollingerBands.calculate({ values: prices, period: 20, stdDev: 2 });
+    const ema = EMA.calculate({ values: prices, period: 20 });
+
+    return {
+        rsi: rsi[rsi.length - 1],
+        macd: macd[macd.length - 1],
+        bollingerBands: bb[bb.length - 1],
+        ema: ema[ema.length - 1],
+        currentPrice: prices[prices.length - 1]
+    };
+}
+
 // Middleware for JWT authentication
 const authenticateToken = (req, res, next) => {
     const authHeader = req.headers["authorization"];
@@ -86,10 +142,18 @@ const authorizeTier = (requiredTier) => (req, res, next) => {
 };
 
 // User Registration
-app.post("/api/register", async (req, res) => {
+app.post("/api/register", authLimiter, async (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required" });
+    }
+
+    if (typeof username !== "string" || username.length < 3 || username.length > 64) {
+        return res.status(400).json({ message: "Username must be between 3 and 64 characters" });
+    }
+
+    if (typeof password !== "string" || password.length < 8 || password.length > 128) {
+        return res.status(400).json({ message: "Password must be between 8 and 128 characters" });
     }
 
     if (users.find(u => u.username === username)) {
@@ -104,7 +168,7 @@ app.post("/api/register", async (req, res) => {
 });
 
 // User Login
-app.post("/api/login", async (req, res) => {
+app.post("/api/login", authLimiter, async (req, res) => {
     const { username, password } = req.body;
     const user = users.find(u => u.username === username);
 
@@ -214,43 +278,18 @@ app.get("/api/prices", authenticateToken, async (req, res) => {
 
 app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), async (req, res) => {
     const { coinId } = req.params;
-    const historicalData = await getHistoricalData(coinId, 30);
-    const prices = historicalData.map(d => d.price);
+    const indicators = await computeIndicators(coinId);
 
-    if (prices.length < 30) {
+    if (!indicators) {
         return res.status(400).json({ error: "Not enough data for indicators" });
     }
 
-    const rsi = RSI.calculate({ values: prices, period: 14 });
-    const macd = MACD.calculate({
-        values: prices,
-        fastPeriod: 12,
-        slowPeriod: 26,
-        signalPeriod: 9,
-        SimpleMAOscillator: false,
-        SimpleMASignal: false
-    });
-    const bb = BollingerBands.calculate({ values: prices, period: 20, stdDev: 2 });
-    const ema = EMA.calculate({ values: prices, period: 20 });
-
-    res.json({
-        rsi: rsi[rsi.length - 1],
-        macd: macd[macd.length - 1],
-        bollingerBands: bb[bb.length - 1],
-        ema: ema[ema.length - 1],
-        currentPrice: prices[prices.length - 1]
-    });
+    res.json(indicators);
 });
 
 app.get("/api/signal/:coinId", authenticateToken, authorizeTier("enterprise"), async (req, res) => {
     const { coinId } = req.params;
-    // Note: When calling internal APIs from within the same server, you might not need to pass the token
-    // if the internal call bypasses the authentication middleware or uses a different mechanism.
-    // For simplicity, we're passing it here as if it were an external call.
-    const indicatorsResponse = await axios.get(`http://localhost:${PORT}/api/indicators/${coinId}`, {
-        headers: { "Authorization": req.headers["authorization"] } // Pass token for internal call
-    });
-    const indicators = indicatorsResponse.data;
+    const indicators = await computeIndicators(coinId);
 
     if (!indicators) {
         return res.status(400).json({ error: "Could not retrieve indicators for signal generation." });

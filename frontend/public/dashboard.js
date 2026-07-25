@@ -162,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 // Define SYMBOLS globally or pass them if needed in other scripts
+const COINS = ["bitcoin", "ethereum", "solana", "binancecoin", "cardano", "ripple"];
 const SYMBOLS = {
     "bitcoin": "BTC",
     "ethereum": "ETH",
