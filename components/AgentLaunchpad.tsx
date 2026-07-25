@@ -148,58 +148,80 @@ export function AgentLaunchpad() {
             })}
           </div>
 
-          <div className="mt-6 overflow-hidden rounded-2xl border border-gray-800">
-            <div className="grid grid-cols-[1.1fr,0.4fr,0.7fr,1fr] gap-4 border-b border-gray-800 bg-gray-950/90 px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
-              <span>Agent</span>
-              <span>Rank</span>
-              <span>Fit</span>
-              <span>Launch</span>
-            </div>
-            <div className="divide-y divide-gray-800 bg-gray-900/60">
-              {recommendations.length > 0 ? (
-                recommendations.map((recommendation) => (
-                  <article
-                    key={recommendation.name}
-                    className="grid grid-cols-1 gap-4 px-4 py-4 md:grid-cols-[1.1fr,0.4fr,0.7fr,1fr] md:items-center"
-                  >
-                    <div>
-                      <p className="text-lg font-semibold text-white">{recommendation.name}</p>
-                      <p className="mt-1 text-sm text-gray-300">
-                        {recommendation.summary}
-                      </p>
-                      <p className="mt-2 text-xs text-cyan-300">
-                        {recommendation.repoNotes[target]}
-                      </p>
-                    </div>
-                    <p className="text-sm text-gray-300">{recommendation.rank}</p>
-                    <div>
-                      <p className="text-xl font-bold text-white">
-                        {recommendation.score}
-                      </p>
-                      <p className="text-xs uppercase tracking-[0.18em] text-gray-400">
-                        {recommendation.focus}
-                      </p>
-                    </div>
-                    <div className="flex flex-col gap-2 md:items-start">
-                      <a
-                        href={recommendation.launchUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-full border border-cyan-400 px-4 py-2 text-sm font-semibold text-cyan-300 transition hover:bg-cyan-400/10"
+          <div className="mt-6 overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/60">
+            {recommendations.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[720px] border-collapse">
+                  <thead className="bg-gray-950/90">
+                    <tr className="border-b border-gray-800 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-400">
+                      <th scope="col" className="px-4 py-3">
+                        Agent
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Rank
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Fit
+                      </th>
+                      <th scope="col" className="px-4 py-3">
+                        Launch
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recommendations.map((recommendation) => (
+                      <tr
+                        key={recommendation.name}
+                        className="border-t border-gray-800 align-top"
                       >
-                        Open {recommendation.name}
-                      </a>
-                      <p className="text-xs text-gray-500">{recommendation.bestFor}</p>
-                    </div>
-                  </article>
-                ))
-              ) : (
-                <div className="px-4 py-6 text-sm text-gray-400">
-                  No tools match that priority for {REPO_TARGET_LABELS[target]} yet.
-                  Try a different filter to see more options.
-                </div>
-              )}
-            </div>
+                        <td className="px-4 py-4">
+                          <p className="text-lg font-semibold text-white">
+                            {recommendation.name}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-300">
+                            {recommendation.summary}
+                          </p>
+                          <p className="mt-2 text-xs text-cyan-300">
+                            {recommendation.repoNotes[target]}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-gray-300">
+                          {recommendation.rank}
+                        </td>
+                        <td className="px-4 py-4">
+                          <p className="text-xl font-bold text-white">
+                            {recommendation.score}
+                          </p>
+                          <p className="text-xs uppercase tracking-[0.18em] text-gray-400">
+                            {recommendation.focus}
+                          </p>
+                        </td>
+                        <td className="px-4 py-4">
+                          <div className="flex flex-col gap-2">
+                            <a
+                              href={recommendation.launchUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center justify-center rounded-full border border-cyan-400 px-4 py-2 text-sm font-semibold text-cyan-300 transition hover:bg-cyan-400/10"
+                            >
+                              Open {recommendation.name}
+                            </a>
+                            <p className="text-xs text-gray-500">
+                              {recommendation.bestFor}
+                            </p>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="px-4 py-6 text-sm text-gray-400">
+                No tools match that priority for {REPO_TARGET_LABELS[target]} yet.
+                Try a different filter to see more options.
+              </div>
+            )}
           </div>
 
           <div className="mt-6 rounded-2xl border border-gray-800 bg-gray-950/60 p-5">
