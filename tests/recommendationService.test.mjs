@@ -79,6 +79,13 @@ test("parseTargets keeps valid unique repo targets in supported order", () => {
   );
 });
 
+test("parseTargets applies canonical order instead of input order", () => {
+  assert.deepEqual(
+    recommendationService.parseTargets("app,frontend,backend"),
+    ["frontend", "backend", "app"]
+  );
+});
+
 test("validateRepositoryParameters trims valid repository coordinates", () => {
   assert.deepEqual(
     recommendationService.validateRepositoryParameters(" vercel ", " next.js "),

@@ -21,7 +21,8 @@ const VALID_FOCUSES: AgentFocus[] = [
 ];
 const MAX_OWNER_LENGTH = 39;
 const MAX_REPOSITORY_IDENTIFIER_LENGTH = 100;
-const OWNER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+const OWNER_PATTERN = /^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$/;
+// GitHub repositories can begin or end with periods, but "." and ".." are invalid names.
 const REPO_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
 
 export interface RepositorySnapshot {
