@@ -28,5 +28,5 @@
 - Added regression coverage in `tests/githubScanner.test.mjs` to verify header declaration order in `fetchRepoInfo()`.
 - Validation run results:
   - Root `npm test`: ✅ pass (including new GitHub scanner regression test)
-  - Root `npm run lint`: ⚠️ fails in current branch environment because `next` binary is unavailable until lockfile/dependency sync is corrected (`npm ci` currently fails due package-lock mismatch)
+  - Root `npm run lint`: ⚠️ fails in current branch environment because `next` binary is unavailable until lockfile/dependency sync is corrected (`npm ci` currently fails due to package-lock mismatch)
   - Root `npm run build`: ⚠️ blocked by the same dependency sync issue

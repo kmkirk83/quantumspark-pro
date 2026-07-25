@@ -3,29 +3,54 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
+import ts from "typescript";
 
 const scannerPath = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "../lib/githubScanner.ts"
 );
 
-test("fetchRepoInfo declares headers before authorization assignment", async () => {
+async function loadGithubScannerModule() {
   const scannerSource = await readFile(scannerPath, "utf8");
-  const fetchRepoInfoStart = scannerSource.indexOf("export async function fetchRepoInfo");
-  const fetchLatestWorkflowRunStart = scannerSource.indexOf(
-    "export async function fetchLatestWorkflowRun"
-  );
-  const fetchRepoInfoBlock = scannerSource.slice(fetchRepoInfoStart, fetchLatestWorkflowRunStart);
+  const compiled = ts.transpileModule(scannerSource, {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022
+    }
+  });
+  const moduleUrl = `data:text/javascript;base64,${Buffer.from(compiled.outputText).toString("base64")}`;
+  return import(moduleUrl);
+}
 
-  const headersDeclarationIndex = fetchRepoInfoBlock.indexOf(
-    'const headers: HeadersInit = { Accept: "application/vnd.github+json" };'
-  );
-  const authAssignmentIndex = fetchRepoInfoBlock.indexOf('headers["Authorization"] = "Bearer " + token;');
+test("fetchRepoInfo sends auth and accept headers when token is provided", async () => {
+  const { fetchRepoInfo } = await loadGithubScannerModule();
+  const originalFetch = globalThis.fetch;
+  let capturedHeaders;
 
-  assert.notEqual(headersDeclarationIndex, -1, "Expected headers declaration in fetchRepoInfo");
-  assert.notEqual(authAssignmentIndex, -1, "Expected Authorization assignment in fetchRepoInfo");
-  assert.ok(
-    headersDeclarationIndex < authAssignmentIndex,
-    "Expected headers declaration before Authorization assignment"
-  );
+  globalThis.fetch = async (_url, options) => {
+    capturedHeaders = options?.headers;
+    return {
+      ok: true,
+      json: async () => ({
+        name: "repo",
+        full_name: "owner/repo",
+        description: null,
+        stargazers_count: 0,
+        open_issues_count: 0,
+        has_issues: true,
+        default_branch: "main",
+        updated_at: "2026-01-01T00:00:00Z"
+      })
+    };
+  };
+
+  try {
+    await fetchRepoInfo("owner", "repo", "token-123");
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+
+  assert.equal(capturedHeaders?.Accept, "application/vnd.github+json");
+  assert.equal(typeof capturedHeaders?.Authorization, "string");
+  assert.ok(capturedHeaders.Authorization.startsWith("Bearer "));
 });
