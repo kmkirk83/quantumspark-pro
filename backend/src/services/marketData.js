@@ -10,15 +10,25 @@ const SYMBOLS = {
   ripple: "XRP",
 };
 
+function assertSupportedCoinId(coinId) {
+  if (!COINS.includes(coinId)) {
+    throw new Error("Unsupported coin");
+  }
+
+  return coinId;
+}
+
 async function getHistoricalData(coinId, days = 30) {
+  const supportedCoinId = assertSupportedCoinId(coinId);
+
   try {
     const response = await axios.get(
-      `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`
+      `https://api.coingecko.com/api/v3/coins/${supportedCoinId}/market_chart?vs_currency=usd&days=${days}&interval=daily`
     );
 
     return response.data.prices.map(([timestamp, price]) => ({ timestamp, price }));
   } catch (error) {
-    console.error(`Error fetching historical data for ${coinId}:`, error.message);
+    console.error("Error fetching historical data.", error.message);
     return [];
   }
 }
@@ -39,6 +49,7 @@ async function getCurrentPrices() {
 module.exports = {
   COINS,
   SYMBOLS,
+  assertSupportedCoinId,
   getCurrentPrices,
   getHistoricalData,
 };

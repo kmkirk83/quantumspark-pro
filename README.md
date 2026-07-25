@@ -18,7 +18,7 @@ cd ../backend && npm ci
 
 ## Environment and deployment
 
-Copy `/home/runner/work/quantumspark-pro/quantumspark-pro/.env.example` into your local `.env` files and replace the placeholder values before running billing, auth, or GitHub integrations.
+Copy `.env.example` into your local `.env` files and replace the placeholder values before running billing, auth, or GitHub integrations.
 
 ### Local defaults
 
@@ -28,7 +28,7 @@ Copy `/home/runner/work/quantumspark-pro/quantumspark-pro/.env.example` into you
 
 ### Vercel
 
-The repository now includes `/home/runner/work/quantumspark-pro/quantumspark-pro/vercel.json` so Mission Control installs with `npm ci` and builds with `npm run build`.
+The repository now includes `vercel.json` so Mission Control installs with `npm ci` and builds with `npm run build`.
 
 ## Validation
 

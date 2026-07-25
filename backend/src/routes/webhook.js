@@ -17,7 +17,7 @@ router.post("/", express.raw({ type: "application/json" }), (req, res) => {
     );
   } catch (error) {
     console.error(`Webhook Error: ${error.message}`);
-    return res.status(400).send(`Webhook Error: ${error.message}`);
+    return res.status(400).json({ error: "Invalid webhook signature" });
   }
 
   switch (event.type) {

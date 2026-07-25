@@ -2,10 +2,11 @@ const express = require("express");
 
 const { FRONTEND_BASE_URL, PRICE_IDS, getStripeClient } = require("../config");
 const { authenticateToken } = require("../middleware/auth");
+const { rateLimit } = require("../middleware/rateLimit");
 
 const router = express.Router();
 
-router.post("/create-checkout-session", authenticateToken, async (req, res) => {
+router.post("/create-checkout-session", rateLimit(), authenticateToken, async (req, res) => {
   const { tier } = req.body;
   const userId = req.user.id;
   const priceId = PRICE_IDS[tier];

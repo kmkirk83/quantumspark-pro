@@ -34,6 +34,6 @@
 - Backend: `cd backend && npm test && npm run lint && npm run build`
 
 ## Session handoff
-- Focus backend changes under `/home/runner/work/quantumspark-pro/quantumspark-pro/backend/src` before touching the thin `/backend/server.js` entry point.
-- Keep deployment variables aligned with `/home/runner/work/quantumspark-pro/quantumspark-pro/.env.example`.
+- Focus backend changes under `backend/src` before touching the thin `backend/server.js` entry point.
+- Keep deployment variables aligned with `.env.example`.
 - Update this file when work spans multiple surfaces or is handed to a new session.

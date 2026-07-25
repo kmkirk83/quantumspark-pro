@@ -1,4 +1,5 @@
 const users = [];
+let nextUserId = 1;
 
 function findUserById(id) {
   return users.find((user) => user.id === id);
@@ -10,12 +11,13 @@ function findUserByUsername(username) {
 
 function createUser({ username, password }) {
   const user = {
-    id: users.length + 1,
+    id: nextUserId,
     username,
     password,
     subscriptionTier: "free",
   };
 
+  nextUserId += 1;
   users.push(user);
   return user;
 }
