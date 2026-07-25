@@ -86,6 +86,13 @@ test("parseTargets applies canonical order instead of input order", () => {
   );
 });
 
+test("parseTargets ignores empty target segments", () => {
+  assert.deepEqual(
+    recommendationService.parseTargets("frontend,,backend,"),
+    ["frontend", "backend"]
+  );
+});
+
 test("validateRepositoryParameters trims valid repository coordinates", () => {
   assert.deepEqual(
     recommendationService.validateRepositoryParameters(" vercel ", " next.js "),

@@ -77,6 +77,7 @@ export function parseTargets(value: string | null): RepoTarget[] {
     value
     .split(",")
     .map((target) => target.trim())
+    .filter((target) => target.length > 0)
     .filter((target): target is RepoTarget =>
       VALID_TARGETS.includes(target as RepoTarget)
     )
@@ -114,7 +115,7 @@ export function validateRepositoryParameters(
 
   if (normalizedRepo.length > MAX_REPOSITORY_IDENTIFIER_LENGTH) {
     return {
-      error: "repo must be 100 characters or fewer",
+      error: `repo must be ${MAX_REPOSITORY_IDENTIFIER_LENGTH} characters or fewer`,
     };
   }
 
