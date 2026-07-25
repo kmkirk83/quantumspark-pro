@@ -24,11 +24,11 @@ function buildCheckoutCancelUrl(baseUrl) {
 
 function getPriceIdForTier(tier, env = process.env) {
     if (tier === "pro") {
-        return env.STRIPE_PRO_PRICE_ID || DEFAULT_PRO_PRICE_ID;
+        return env.STRIPE_PRO_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_PRO_PRICE_ID);
     }
 
     if (tier === "enterprise") {
-        return env.STRIPE_ENTERPRISE_PRICE_ID || DEFAULT_ENTERPRISE_PRICE_ID;
+        return env.STRIPE_ENTERPRISE_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_ENTERPRISE_PRICE_ID);
     }
 
     return null;

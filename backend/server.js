@@ -25,6 +25,7 @@ const {
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
 } = require("./lib/checkout-session");
+const { createRateLimit } = require("./lib/rate-limit");
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -45,6 +46,11 @@ const openai = new OpenAI({
 // In-memory user store for demonstration
 // In a real application, this would be a database
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
+const sessionReadRateLimit = createRateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    message: "Too many session requests. Please try again in a minute.",
+});
 
 function findUserById(id) {
     return users.find((user) => user.id === id);
@@ -136,7 +142,7 @@ app.post("/api/login", async (req, res) => {
     res.json({ accessToken, user: getPublicUser(user) });
 });
 
-app.get("/api/me", authenticateToken, (req, res) => {
+app.get("/api/me", sessionReadRateLimit, authenticateToken, (req, res) => {
     const user = findUserById(req.user.id);
 
     if (!user) {
@@ -223,7 +229,7 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
     res.send();
 });
 
-app.get("/api/checkout-session/:sessionId", authenticateToken, async (req, res) => {
+app.get("/api/checkout-session/:sessionId", sessionReadRateLimit, authenticateToken, async (req, res) => {
     try {
         const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
 
@@ -289,6 +295,7 @@ app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), asyn
     const ema = EMA.calculate({ values: prices, period: 20 });
 
     res.json({
+        // Preserve the historical price array for the frontend chart alongside the indicator snapshot.
         prices,
         rsi: rsi[rsi.length - 1],
         macd: macd[macd.length - 1],

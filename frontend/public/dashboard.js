@@ -65,9 +65,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const renderPriceChart = async (coinId = "bitcoin") => {
         try {
             const indicatorData = await fetchWithAuth(`/api/indicators/${coinId}`);
+            const fallbackPrice = Number.isFinite(indicatorData.currentPrice) ? indicatorData.currentPrice : null;
+
+            if ((!Array.isArray(indicatorData.prices) || !indicatorData.prices.length) && fallbackPrice === null) {
+                throw new Error("No price data is available for the selected chart.");
+            }
+
             const prices = Array.isArray(indicatorData.prices) && indicatorData.prices.length
                 ? indicatorData.prices
-                : [indicatorData.currentPrice];
+                : [fallbackPrice];
             const labels = prices.map((_, index) => `Point ${index + 1}`);
 
             if (priceChart) {
