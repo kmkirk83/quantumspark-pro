@@ -2,7 +2,7 @@ const DEFAULT_APP_URL = "http://localhost:3000";
 const DEFAULT_PRO_PRICE_ID = "price_12345";
 const DEFAULT_ENTERPRISE_PRICE_ID = "price_67890";
 const TIER_ORDER = { free: 0, pro: 1, enterprise: 2 };
-const CHECKOUT_SESSION_ID_PATTERN = /^cs_(test_|live_)?[A-Za-z0-9]+$/;
+const CHECKOUT_SESSION_ID_PATTERN = /^cs_(test_|live_)[A-Za-z0-9]+$/;
 
 function normalizeAppUrl(baseUrl = DEFAULT_APP_URL) {
     return String(baseUrl || DEFAULT_APP_URL).replace(/\/+$/, "");
@@ -76,11 +76,11 @@ function syncSubscriptionFromCheckoutSession(users, session) {
         return null;
     }
 
-    const isSuccessful = session.status === "complete" && session.payment_status === "paid";
+    const hasSuccessfulPayment = session.status === "complete" && session.payment_status === "paid";
     const userId = Number.parseInt(session.metadata?.userId, 10);
     const newTier = session.metadata?.tier;
 
-    if (!isSuccessful || !Number.isInteger(userId) || !TIER_ORDER[newTier]) {
+    if (!hasSuccessfulPayment || !Number.isInteger(userId) || !TIER_ORDER[newTier]) {
         return null;
     }
 

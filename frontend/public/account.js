@@ -93,7 +93,7 @@ async function submitAuthForm(event) {
     }
 
     try {
-        const wasRegister = mode === "register";
+        const isRegisterMode = mode === "register";
 
         if (mode === "register") {
             await apiRequest("/api/register", {
@@ -113,7 +113,7 @@ async function submitAuthForm(event) {
         authForm.reset();
         setMode("login");
         await loadCurrentUser();
-        setStatus(wasRegister ? "Account created and session started successfully." : "Session started successfully.", "text-emerald-300");
+        setStatus(isRegisterMode ? "Account created and session started successfully." : "Session started successfully.", "text-emerald-300");
     } catch (error) {
         setStatus(error.message, "text-red-300");
     }
