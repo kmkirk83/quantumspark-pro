@@ -17,8 +17,8 @@ export function DashboardCard({
   const statusClass = STATUS_CLASSES[status] ?? "text-sky-400";
 
   return (
-    <article className="rounded-2xl border border-gray-700 bg-gray-800/90 p-6 shadow-lg">
-      <p className="text-sm uppercase tracking-[0.2em] text-gray-400">
+    <article className="rounded-[28px] border border-white/10 bg-slate-950/35 p-6 shadow-[0_18px_50px_rgba(2,6,23,0.3)]">
+      <p className="text-sm uppercase tracking-[0.22em] text-slate-400">
         {title}
       </p>
       <div className="mt-4 flex items-end justify-between gap-4">

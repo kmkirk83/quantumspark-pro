@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "QuantumSpark Mission Control",
-  description: "Platform readiness dashboard for QuantumSpark Pro",
+  title: "QuantumSpark Pro Trading Cockpit",
+  description: "Modern AI trading dashboard for portfolio insight, signals, and operational trust.",
 };
 
 export default function RootLayout({
