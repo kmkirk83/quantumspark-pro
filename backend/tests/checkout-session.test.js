@@ -7,6 +7,7 @@ const {
     canUpgradeToTier,
     getPriceIdForTier,
     isCheckoutSessionOwner,
+    isValidCheckoutSessionId,
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
 } = require("../lib/checkout-session");
@@ -34,10 +35,13 @@ test("syncSubscriptionFromCheckoutSession upgrades the matching user", () => {
 test("tier helpers enforce access and upgrade direction", () => {
     assert.equal(userHasRequiredTier("enterprise", "pro"), true);
     assert.equal(userHasRequiredTier("free", "pro"), false);
+    assert.throws(() => userHasRequiredTier("free", "vip"), /Unknown required tier/);
     assert.equal(canUpgradeToTier("free", "pro"), true);
     assert.equal(canUpgradeToTier("enterprise", "pro"), false);
     assert.equal(isCheckoutSessionOwner({ metadata: { userId: "3" } }, 3), true);
     assert.equal(isCheckoutSessionOwner({ metadata: { userId: "3" } }, 4), false);
+    assert.equal(isValidCheckoutSessionId("cs_test_123ABC"), true);
+    assert.equal(isValidCheckoutSessionId("cs_test_123_ABC"), false);
 });
 
 test("getPriceIdForTier requires configured production price ids", () => {

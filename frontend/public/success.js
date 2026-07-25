@@ -4,7 +4,7 @@ import { getStoredToken } from "./lib/session.js";
 const successState = document.getElementById("success-state");
 const searchParams = new URLSearchParams(window.location.search);
 const sessionId = searchParams.get("session_id");
-const SESSION_ID_PATTERN = /^cs_(test_|live_)?[A-Za-z0-9_]+$/;
+const SESSION_ID_PATTERN = /^cs_(test_|live_)?[A-Za-z0-9]+$/;
 
 function render(message) {
     successState.innerHTML = message;

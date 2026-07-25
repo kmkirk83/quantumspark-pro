@@ -23,6 +23,7 @@ const {
     getPriceIdForTier,
     getPublicUser,
     isCheckoutSessionOwner,
+    isValidCheckoutSessionId,
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
 } = require("./lib/checkout-session");
@@ -49,7 +50,7 @@ const openai = new OpenAI({
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
 const sessionReadRateLimit = rateLimit({
     windowMs: 60 * 1000,
-    limit: 60,
+    limit: 20,
     standardHeaders: "draft-8",
     legacyHeaders: false,
     message: { message: "Too many session requests. Please try again in a minute." },
@@ -239,6 +240,10 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
 });
 
 app.get("/api/checkout-session/:sessionId", sessionReadRateLimit, authenticateToken, async (req, res) => {
+    if (!isValidCheckoutSessionId(req.params.sessionId)) {
+        return res.status(400).json({ message: "Invalid checkout session id." });
+    }
+
     try {
         const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
 
