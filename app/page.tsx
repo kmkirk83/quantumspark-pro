@@ -1,3 +1,4 @@
+import { AgentLaunchpad } from "@/components/AgentLaunchpad";
 import { SystemHealth } from "@/components/SystemHealth";
 import type { ReadinessCheck } from "@/lib/scoring";
 
@@ -76,6 +77,10 @@ export default function MissionControlPage() {
           ))}
         </ul>
       </section>
+
+      <div className="mt-10">
+        <AgentLaunchpad />
+      </div>
     </main>
   );
 }
