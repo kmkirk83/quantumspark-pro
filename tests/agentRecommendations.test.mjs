@@ -10,6 +10,9 @@ import ts from "typescript";
 const sourcePath = fileURLToPath(
   new URL("../lib/agentRecommendations.ts", import.meta.url)
 );
+const tempDirectories = [];
+let moduleVersion = 0;
+let recommendationsModule;
 
 async function loadRecommendationsModule() {
   const source = await readFile(sourcePath, "utf8");
@@ -28,10 +31,6 @@ async function loadRecommendationsModule() {
   moduleVersion += 1;
   return import(`${pathToFileURL(modulePath).href}?t=${moduleVersion}`);
 }
-
-const tempDirectories = [];
-let moduleVersion = 0;
-let recommendationsModule;
 
 test.after(async () => {
   await Promise.all(

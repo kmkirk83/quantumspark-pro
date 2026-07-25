@@ -6,6 +6,7 @@ import {
   REPO_TARGET_DESCRIPTIONS,
   REPO_TARGET_LABELS,
   filterRecommendations,
+  getRecommendationsForTarget,
   getTopRecommendation,
   type AgentFocus,
   type RepoTarget,
@@ -68,6 +69,7 @@ export function AgentLaunchpad() {
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
             {TARGETS.map((candidate) => {
               const selected = candidate === target;
+              const optionCount = getRecommendationsForTarget(candidate).length;
               return (
                 <button
                   key={candidate}
@@ -84,7 +86,7 @@ export function AgentLaunchpad() {
                       {REPO_TARGET_LABELS[candidate]}
                     </span>
                     <span className="text-xs uppercase tracking-[0.2em] text-gray-400">
-                      {REPO_TARGET_LABELS[candidate]}
+                      {optionCount} options
                     </span>
                   </div>
                   <p className="mt-2 text-sm text-gray-400">
