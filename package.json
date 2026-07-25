@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "test": "node --test"
+    "test": "node --test",
+    "test:github-scanner": "node --test tests/githubScanner.test.mjs"
   },
   "dependencies": {
     "next": "^15.3.3",

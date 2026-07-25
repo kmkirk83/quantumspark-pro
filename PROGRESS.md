@@ -1,5 +1,16 @@
 # QuantumSpark Pro - Progress Tracking
 
+## Repository context
+- Active repository: `kmkirk83/quantumspark-pro`
+- Mission Control lives at the repository root.
+- The trading dashboard lives in `/frontend` and the API lives in `/backend`.
+
+## Session start checklist
+- [ ] Confirm you are working in `quantumspark-pro` before editing files.
+- [ ] Batch related changes into a single focused session.
+- [ ] Open or update a draft PR if the work spans multiple app surfaces.
+- [ ] Record handoff notes before ending the session.
+
 ## Roadmap
 - [x] 1) Create repo with project structure (Express backend + static frontend with Tailwind)
 - [x] 2) CoinGecko real-time price feed for BTC/ETH/SOL/BNB/ADA/XRP
@@ -12,19 +23,17 @@
 - [ ] 9) Legal disclaimers + GitHub Pages deployment
 
 ## Completed Today
-- Initialized repository and project structure.
-- Set up Express backend and Tailwind CSS frontend.
-- Implemented CoinGecko real-time price feed for major cryptocurrencies.
-- Integrated `technicalindicators` library and created API endpoints for RSI, MACD, Bollinger Bands, and EMA.
-- Implemented OpenAI-powered trading signal generation (BUY/SELL/HOLD) with confidence scores and reasoning based on technical indicators.
-- Implemented JWT authentication for user registration and login.
-- Added server-side subscription tier enforcement for API endpoints (free, pro, enterprise).
-- Integrated Stripe checkout for Pro and Enterprise subscriptions, including session creation and webhook handling.
-- Developed a 30-day backtesting engine with win rate, PnL, and Sharpe ratio calculation.
-- Implemented the frontend dashboard with Chart.js for price visualization, a live ticker for real-time price updates, and a signal feed for AI-generated trading signals.
+- Refactored the backend into modular routes, middleware, services, and a thin server entry point.
+- Added backend regression tests for root health, auth flow, protected routes, and checkout tier validation.
+- Added a dedicated `npm run test:github-scanner` smoke test and CI step for early failure on scanner regressions.
+- Added `.env.example`, `vercel.json`, and contributor workflow guidance for deployment and session handoff.
 
 ## Verification
-- Fixed `lib/githubScanner.ts` header construction so Mission Control no longer references `headers` before declaration.
-- Added root-level coverage for GitHub scanner fetch headers and CI status behavior.
-- Regenerated the root `package-lock.json` to remove committed merge markers and restore `npm ci` compatibility.
-- Verified the Mission Control app with `npm test`, `npm run lint`, and `npm run build`.
+- Root Mission Control: `npm run test:github-scanner`, `npm test`, `npm run lint`, `npm run build`
+- Frontend: `cd frontend && npm test && npm run lint && npm run build`
+- Backend: `cd backend && npm test && npm run lint && npm run build`
+
+## Session handoff
+- Focus backend changes under `/home/runner/work/quantumspark-pro/quantumspark-pro/backend/src` before touching the thin `/backend/server.js` entry point.
+- Keep deployment variables aligned with `/home/runner/work/quantumspark-pro/quantumspark-pro/.env.example`.
+- Update this file when work spans multiple surfaces or is handed to a new session.
