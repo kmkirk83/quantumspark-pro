@@ -6,6 +6,7 @@ const OpenAI = require("openai");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const Stripe = require("stripe");
+const { rateLimit } = require("express-rate-limit");
 require("dotenv").config();
 
 const app = express();
@@ -25,7 +26,6 @@ const {
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
 } = require("./lib/checkout-session");
-const { createRateLimit } = require("./lib/rate-limit");
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -46,10 +46,12 @@ const openai = new OpenAI({
 // In-memory user store for demonstration
 // In a real application, this would be a database
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
-const sessionReadRateLimit = createRateLimit({
+const sessionReadRateLimit = rateLimit({
     windowMs: 60 * 1000,
-    max: 30,
-    message: "Too many session requests. Please try again in a minute.",
+    limit: 30,
+    standardHeaders: "draft-8",
+    legacyHeaders: false,
+    message: { message: "Too many session requests. Please try again in a minute." },
 });
 
 function findUserById(id) {
@@ -158,11 +160,17 @@ app.post("/api/create-checkout-session", authenticateToken, async (req, res) => 
     const userId = req.user.id;
 
     const user = findUserById(userId);
-    const priceId = getPriceIdForTier(tier);
+    let priceId;
     const metadata = { userId: userId.toString(), tier: tier };
 
     if (!user) {
         return res.status(404).json({ error: "User not found" });
+    }
+
+    try {
+        priceId = getPriceIdForTier(tier);
+    } catch (error) {
+        return res.status(503).json({ error: error.message });
     }
 
     if (!priceId) {

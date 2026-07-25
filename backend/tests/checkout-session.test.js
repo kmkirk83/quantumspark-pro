@@ -5,6 +5,7 @@ const {
     buildCheckoutCancelUrl,
     buildCheckoutSuccessUrl,
     canUpgradeToTier,
+    getPriceIdForTier,
     isCheckoutSessionOwner,
     syncSubscriptionFromCheckoutSession,
     userHasRequiredTier,
@@ -37,4 +38,18 @@ test("tier helpers enforce access and upgrade direction", () => {
     assert.equal(canUpgradeToTier("enterprise", "pro"), false);
     assert.equal(isCheckoutSessionOwner({ metadata: { userId: "3" } }, 3), true);
     assert.equal(isCheckoutSessionOwner({ metadata: { userId: "3" } }, 4), false);
+});
+
+test("getPriceIdForTier requires configured production price ids", () => {
+    assert.throws(
+        () => getPriceIdForTier("pro", { NODE_ENV: "production" }),
+        /STRIPE_PRO_PRICE_ID/
+    );
+    assert.equal(
+        getPriceIdForTier("enterprise", {
+            NODE_ENV: "production",
+            STRIPE_ENTERPRISE_PRICE_ID: "price_live_enterprise",
+        }),
+        "price_live_enterprise"
+    );
 });

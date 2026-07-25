@@ -24,11 +24,23 @@ function buildCheckoutCancelUrl(baseUrl) {
 
 function getPriceIdForTier(tier, env = process.env) {
     if (tier === "pro") {
-        return env.STRIPE_PRO_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_PRO_PRICE_ID);
+        const priceId = env.STRIPE_PRO_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_PRO_PRICE_ID);
+
+        if (!priceId && env.NODE_ENV === "production") {
+            throw new Error("Missing STRIPE_PRO_PRICE_ID configuration.");
+        }
+
+        return priceId;
     }
 
     if (tier === "enterprise") {
-        return env.STRIPE_ENTERPRISE_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_ENTERPRISE_PRICE_ID);
+        const priceId = env.STRIPE_ENTERPRISE_PRICE_ID || (env.NODE_ENV === "production" ? null : DEFAULT_ENTERPRISE_PRICE_ID);
+
+        if (!priceId && env.NODE_ENV === "production") {
+            throw new Error("Missing STRIPE_ENTERPRISE_PRICE_ID configuration.");
+        }
+
+        return priceId;
     }
 
     return null;
