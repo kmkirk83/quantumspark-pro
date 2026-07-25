@@ -176,10 +176,14 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
   },
 ];
 
+const SORTED_AGENT_RECOMMENDATIONS = [...AGENT_RECOMMENDATIONS].sort(
+  (left, right) => left.rank - right.rank
+);
+
 export function getRecommendationsForTarget(target: RepoTarget): AgentRecommendation[] {
-  return AGENT_RECOMMENDATIONS.filter((recommendation) =>
+  return SORTED_AGENT_RECOMMENDATIONS.filter((recommendation) =>
     recommendation.repoTargets.includes(target)
-  ).sort((left, right) => left.rank - right.rank);
+  );
 }
 
 export function filterRecommendations(
@@ -192,5 +196,5 @@ export function filterRecommendations(
 }
 
 export function getTopRecommendation(target: RepoTarget): AgentRecommendation {
-  return getRecommendationsForTarget(target)[0] ?? AGENT_RECOMMENDATIONS[0];
+  return getRecommendationsForTarget(target)[0] ?? SORTED_AGENT_RECOMMENDATIONS[0];
 }

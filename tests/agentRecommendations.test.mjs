@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, readFile, writeFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -21,13 +21,23 @@ async function loadRecommendationsModule() {
   });
   const tempDirectory = await mkdtemp(join(tmpdir(), "agent-recommendations-"));
   const modulePath = join(tempDirectory, "agentRecommendations.mjs");
+  tempDirectories.push(tempDirectory);
 
   await writeFile(modulePath, outputText, "utf8");
 
   return import(`${pathToFileURL(modulePath).href}?t=${Date.now()}`);
 }
 
+const tempDirectories = [];
 const recommendationsModule = await loadRecommendationsModule();
+
+test.after(async () => {
+  await Promise.all(
+    tempDirectories.map((directory) =>
+      rm(directory, { recursive: true, force: true })
+    )
+  );
+});
 
 test("getRecommendationsForTarget returns ranked matches for backend", () => {
   const recommendations = recommendationsModule.getRecommendationsForTarget(

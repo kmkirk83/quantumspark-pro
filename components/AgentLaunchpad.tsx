@@ -163,9 +163,7 @@ export function AgentLaunchpad() {
                     className="grid grid-cols-1 gap-4 px-4 py-4 md:grid-cols-[1.1fr,0.4fr,0.7fr,1fr] md:items-center"
                   >
                     <div>
-                      <p className="text-lg font-semibold text-white">
-                        #{recommendation.rank} {recommendation.name}
-                      </p>
+                      <p className="text-lg font-semibold text-white">{recommendation.name}</p>
                       <p className="mt-1 text-sm text-gray-300">
                         {recommendation.summary}
                       </p>
