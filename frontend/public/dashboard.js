@@ -1,33 +1,52 @@
+import { apiRequest } from "./lib/api.js";
+import { clearStoredToken, getStoredToken } from "./lib/session.js";
+
 document.addEventListener("DOMContentLoaded", () => {
-    const backendUrl = "http://localhost:5000"; // Your backend URL
     const liveTickerDiv = document.getElementById("live-ticker");
     const signalFeedDiv = document.getElementById("signal-feed");
     const backtestingResultsDiv = document.getElementById("backtesting-results");
     const priceChartCanvas = document.getElementById("priceChart");
     let priceChart;
+    let isSessionActive = Boolean(getStoredToken());
 
-    // Dummy token for testing - replace with actual login flow
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwidXNlcm5hbWUiOiJ0ZXN0dXNlciIsInN1YnNjcmlwdGlvblRpZXIiOiJlbnRlcnByaXNlIiwiaWF0IjoxNzA1NzU2ODAwLCJleHAiOjE3MDU3NjA0MDB9.YOUR_DUMMY_TOKEN_HERE"; 
+    const renderLoggedOutState = (message) => {
+        const content = `
+            <div class="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-100">
+                ${message} <a href="./account.html" class="font-semibold text-white underline">Open account</a>
+            </div>
+        `;
 
-    const fetchWithAuth = async (url) => {
-        const response = await fetch(url, {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.message || `HTTP error! status: ${response.status}`);
-        }
-        return response.json();
+        liveTickerDiv.innerHTML = content;
+        signalFeedDiv.innerHTML = content;
+        backtestingResultsDiv.innerHTML = content;
     };
 
-    // Function to update live ticker
+    const handleSessionError = (error) => {
+        if (error.status === 401 || error.status === 403) {
+            isSessionActive = false;
+            clearStoredToken();
+            renderLoggedOutState("Your session expired.");
+        }
+    };
+
+    const fetchWithAuth = async (path) => {
+        if (!isSessionActive) {
+            throw new Error("Sign in on the account page before using the dashboard.");
+        }
+
+        try {
+            return await apiRequest(path);
+        } catch (error) {
+            handleSessionError(error);
+            throw error;
+        }
+    };
+
     const updateLiveTicker = async () => {
         try {
-            const prices = await fetchWithAuth(`${backendUrl}/api/prices`);
+            const prices = await fetchWithAuth("/api/prices");
             liveTickerDiv.innerHTML = "";
-            prices.forEach(coin => {
+            prices.forEach((coin) => {
                 const changeClass = coin.change24h >= 0 ? "text-green-500" : "text-red-500";
                 liveTickerDiv.innerHTML += `
                     <div class="flex justify-between items-center">
@@ -43,12 +62,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Function to render price chart
     const renderPriceChart = async (coinId = "bitcoin") => {
         try {
-            const historicalData = await fetchWithAuth(`${backendUrl}/api/indicators/${coinId}`); // Reusing indicators endpoint for historical prices
-            const labels = Array.from({ length: 30 }, (_, i) => `Day ${i + 1}`); // Dummy labels for 30 days
-            const data = historicalData.prices; // Assuming prices are returned in the indicators endpoint
+            const indicatorData = await fetchWithAuth(`/api/indicators/${coinId}`);
+            const prices = Array.isArray(indicatorData.prices) && indicatorData.prices.length
+                ? indicatorData.prices
+                : [indicatorData.currentPrice];
+            const labels = prices.map((_, index) => `Point ${index + 1}`);
 
             if (priceChart) {
                 priceChart.destroy();
@@ -57,15 +77,15 @@ document.addEventListener("DOMContentLoaded", () => {
             priceChart = new Chart(priceChartCanvas, {
                 type: "line",
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
                         label: `${SYMBOLS[coinId]} Price (USD)`,
-                        data: data,
+                        data: prices,
                         borderColor: "#7c3aed",
                         backgroundColor: "rgba(124, 58, 237, 0.2)",
                         fill: true,
-                        tension: 0.4
-                    }]
+                        tension: 0.4,
+                    }],
                 },
                 options: {
                     responsive: true,
@@ -73,48 +93,51 @@ document.addEventListener("DOMContentLoaded", () => {
                     scales: {
                         x: {
                             grid: { color: "rgba(255,255,255,0.1)" },
-                            ticks: { color: "#9ca3af" }
+                            ticks: { color: "#9ca3af" },
                         },
                         y: {
                             grid: { color: "rgba(255,255,255,0.1)" },
-                            ticks: { color: "#9ca3af" }
-                        }
+                            ticks: { color: "#9ca3af" },
+                        },
                     },
                     plugins: {
-                        legend: { display: false }
-                    }
-                }
+                        legend: { display: false },
+                    },
+                },
             });
         } catch (error) {
             console.error("Error rendering price chart:", error);
-            priceChartCanvas.innerHTML = `<p class="text-red-500">Failed to load chart data: ${error.message}</p>`;
         }
     };
 
-    // Function to update AI signal feed
     const updateSignalFeed = async () => {
         try {
-            // Fetch signals for all coins
-            const signals = await Promise.all(COINS.map(coinId => 
-                fetchWithAuth(`${backendUrl}/api/signal/${coinId}`).catch(e => null) // Handle individual coin errors
+            const signals = await Promise.all(COINS.map((coinId) =>
+                fetchWithAuth(`/api/signal/${coinId}`).catch(() => null)
             ));
 
             signalFeedDiv.innerHTML = "";
             signals.forEach((signal, index) => {
-                if (signal) {
-                    const coinSymbol = SYMBOLS[COINS[index]];
-                    const signalColor = signal.signal === "BUY" ? "text-green-500" : signal.signal === "SELL" ? "text-red-500" : "text-yellow-500";
-                    signalFeedDiv.innerHTML += `
-                        <div class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
-                            <div>
-                                <span class="text-xl font-bold">${coinSymbol}: <span class="${signalColor}">${signal.signal}</span></span>
-                                <p class="text-gray-400 text-sm">Confidence: ${signal.confidence}%</p>
-                                <p class="text-gray-300 text-sm">Reasoning: ${signal.reasoning}</p>
-                            </div>
-                            <span class="text-gray-500 text-xs">${new Date().toLocaleTimeString()}</span>
-                        </div>
-                    `;
+                if (!signal) {
+                    return;
                 }
+
+                const coinSymbol = SYMBOLS[COINS[index]];
+                const signalColor = signal.signal === "BUY"
+                    ? "text-green-500"
+                    : signal.signal === "SELL"
+                        ? "text-red-500"
+                        : "text-yellow-500";
+                signalFeedDiv.innerHTML += `
+                    <div class="bg-gray-700 p-4 rounded-lg flex justify-between items-center">
+                        <div>
+                            <span class="text-xl font-bold">${coinSymbol}: <span class="${signalColor}">${signal.signal}</span></span>
+                            <p class="text-gray-400 text-sm">Confidence: ${signal.confidence}%</p>
+                            <p class="text-gray-300 text-sm">Reasoning: ${signal.reasoning}</p>
+                        </div>
+                        <span class="text-gray-500 text-xs">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                `;
             });
         } catch (error) {
             console.error("Error fetching AI signals:", error);
@@ -122,10 +145,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Function to display backtesting results
     const displayBacktestingResults = async (coinId = "bitcoin") => {
         try {
-            const results = await fetchWithAuth(`${backendUrl}/api/backtest/${coinId}`);
+            const results = await fetchWithAuth(`/api/backtest/${coinId}`);
             backtestingResultsDiv.innerHTML = `
                 <p><strong>Coin:</strong> ${results.coinId.toUpperCase()}</p>
                 <p><strong>Period:</strong> ${results.backtestPeriod}</p>
@@ -134,7 +156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <p><strong>Sharpe Ratio:</strong> ${results.sharpeRatio.toFixed(2)}</p>
                 <h4 class="font-semibold mt-4">Trades:</h4>
                 <ul class="list-disc list-inside">
-                    ${results.trades.map(trade => `<li>${trade.type} at $${trade.price.toFixed(2)} on ${new Date(trade.date).toLocaleDateString()} ${trade.profit ? `(Profit: $${trade.profit.toFixed(2)})` : ``}</li>`).join("")}
+                    ${results.trades.map((trade) => `<li>${trade.type} at $${trade.price.toFixed(2)} on ${new Date(trade.date).toLocaleDateString()} ${trade.profit ? `(Profit: $${trade.profit.toFixed(2)})` : ""}</li>`).join("")}
                 </ul>
             `;
         } catch (error) {
@@ -143,30 +165,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     };
 
-    // Initial calls and set intervals
-    updateLiveTicker();
-    renderPriceChart();
-    updateSignalFeed();
-    displayBacktestingResults(); // Display for a default coin
+    if (!isSessionActive) {
+        renderLoggedOutState("No active session.");
+    } else {
+        updateLiveTicker();
+        renderPriceChart();
+        updateSignalFeed();
+        displayBacktestingResults();
 
-    setInterval(updateLiveTicker, 10000); // Update every 10 seconds
-    setInterval(updateSignalFeed, 30000); // Update every 30 seconds
+        setInterval(updateLiveTicker, 10000);
+        setInterval(updateSignalFeed, 30000);
+    }
 
-    // Logout functionality
     document.getElementById("logout-btn").addEventListener("click", () => {
-        // Clear token and redirect to login page (implement actual login page later)
-        localStorage.removeItem("jwtToken");
-        alert("Logged out!");
-        // window.location.href = "/login.html"; 
+        clearStoredToken();
+        isSessionActive = false;
+        renderLoggedOutState("Session ended.");
+        window.location.href = "./account.html";
     });
 });
 
-// Define SYMBOLS globally or pass them if needed in other scripts
 const SYMBOLS = {
-    "bitcoin": "BTC",
-    "ethereum": "ETH",
-    "solana": "SOL",
-    "binancecoin": "BNB",
-    "cardano": "ADA",
-    "ripple": "XRP"
+    bitcoin: "BTC",
+    ethereum: "ETH",
+    solana: "SOL",
+    binancecoin: "BNB",
+    cardano: "ADA",
+    ripple: "XRP",
 };
+
+const COINS = Object.keys(SYMBOLS);

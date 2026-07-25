@@ -13,6 +13,18 @@ const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
+const APP_URL = process.env.APP_URL || "http://localhost:3000";
+
+const {
+    buildCheckoutCancelUrl,
+    buildCheckoutSuccessUrl,
+    canUpgradeToTier,
+    getPriceIdForTier,
+    getPublicUser,
+    isCheckoutSessionOwner,
+    syncSubscriptionFromCheckoutSession,
+    userHasRequiredTier,
+} = require("./lib/checkout-session");
 
 const stripe = new Stripe(STRIPE_SECRET_KEY);
 
@@ -33,6 +45,10 @@ const openai = new OpenAI({
 // In-memory user store for demonstration
 // In a real application, this would be a database
 const users = []; // { id, username, password, subscriptionTier: 'free' | 'pro' | 'enterprise' }
+
+function findUserById(id) {
+    return users.find((user) => user.id === id);
+}
 
 const COINS = ["bitcoin", "ethereum", "solana", "binancecoin", "cardano", "ripple"];
 const SYMBOLS = {
@@ -72,13 +88,12 @@ const authenticateToken = (req, res, next) => {
 // Middleware for subscription tier enforcement
 const authorizeTier = (requiredTier) => (req, res, next) => {
     // In a real app, you'd fetch user from DB to get latest tier
-    const user = users.find(u => u.id === req.user.id); // Find user from in-memory store
+    const user = findUserById(req.user.id); // Find user from in-memory store
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const userTier = user.subscriptionTier; 
 
-    const tiers = { "free": 0, "pro": 1, "enterprise": 2 };
-    if (tiers[userTier] >= tiers[requiredTier]) {
+    if (userHasRequiredTier(userTier, requiredTier)) {
         next();
     } else {
         res.status(403).json({ message: `Access denied. Requires ${requiredTier} subscription.` });
@@ -100,7 +115,7 @@ app.post("/api/register", async (req, res) => {
     const newUser = { id: users.length + 1, username, password: hashedPassword, subscriptionTier: "free" };
     users.push(newUser);
 
-    res.status(201).json({ message: "User registered successfully", user: { id: newUser.id, username: newUser.username, subscriptionTier: newUser.subscriptionTier } });
+    res.status(201).json({ message: "User registered successfully", user: getPublicUser(newUser) });
 });
 
 // User Login
@@ -118,7 +133,17 @@ app.post("/api/login", async (req, res) => {
     }
 
     const accessToken = jwt.sign({ id: user.id, username: user.username, subscriptionTier: user.subscriptionTier }, JWT_SECRET, { expiresIn: "1h" });
-    res.json({ accessToken });
+    res.json({ accessToken, user: getPublicUser(user) });
+});
+
+app.get("/api/me", authenticateToken, (req, res) => {
+    const user = findUserById(req.user.id);
+
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    res.json({ user: getPublicUser(user) });
 });
 
 // Stripe Checkout Session Creation
@@ -126,15 +151,20 @@ app.post("/api/create-checkout-session", authenticateToken, async (req, res) => 
     const { tier } = req.body; // 'pro' or 'enterprise'
     const userId = req.user.id;
 
-    let priceId;
-    let metadata = { userId: userId.toString(), tier: tier };
+    const user = findUserById(userId);
+    const priceId = getPriceIdForTier(tier);
+    const metadata = { userId: userId.toString(), tier: tier };
 
-    if (tier === "pro") {
-        priceId = "price_12345"; // Replace with your actual Stripe Price ID for Pro
-    } else if (tier === "enterprise") {
-        priceId = "price_67890"; // Replace with your actual Stripe Price ID for Enterprise
-    } else {
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    if (!priceId) {
         return res.status(400).json({ error: "Invalid subscription tier" });
+    }
+
+    if (!canUpgradeToTier(user.subscriptionTier, tier)) {
+        return res.status(409).json({ error: "Requested tier must be higher than the current subscription." });
     }
 
     try {
@@ -147,8 +177,8 @@ app.post("/api/create-checkout-session", authenticateToken, async (req, res) => 
                 },
             ],
             mode: "subscription",
-            success_url: `http://localhost:3000/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `http://localhost:3000/cancel`,
+            success_url: buildCheckoutSuccessUrl(APP_URL),
+            cancel_url: buildCheckoutCancelUrl(APP_URL),
             metadata: metadata,
         });
         res.json({ url: session.url });
@@ -178,9 +208,8 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
             const newTier = session.metadata.tier;
 
             // Update user's subscription tier in your database (in-memory for this example)
-            const userIndex = users.findIndex(u => u.id === userId);
-            if (userIndex !== -1) {
-                users[userIndex].subscriptionTier = newTier;
+            const updatedUser = syncSubscriptionFromCheckoutSession(users, session);
+            if (updatedUser) {
                 console.log(`User ${userId} updated to ${newTier} tier.`);
             } else {
                 console.error(`User ${userId} not found for subscription update.`);
@@ -192,6 +221,32 @@ app.post("/webhook", express.raw({ type: "application/json" }), (req, res) => {
     }
 
     res.send();
+});
+
+app.get("/api/checkout-session/:sessionId", authenticateToken, async (req, res) => {
+    try {
+        const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
+
+        if (!isCheckoutSessionOwner(session, req.user.id)) {
+            return res.status(403).json({ message: "This checkout session does not belong to the current user." });
+        }
+
+        const updatedUser = syncSubscriptionFromCheckoutSession(users, session) || findUserById(req.user.id);
+
+        res.json({
+            checkoutSession: {
+                id: session.id,
+                status: session.status,
+                paymentStatus: session.payment_status,
+                tier: session.metadata?.tier || null,
+                customerEmail: session.customer_details?.email || null,
+            },
+            user: getPublicUser(updatedUser),
+        });
+    } catch (error) {
+        console.error("Error retrieving checkout session:", error.message);
+        res.status(500).json({ error: "Failed to retrieve checkout session" });
+    }
 });
 
 app.get("/api/prices", authenticateToken, async (req, res) => {
@@ -234,6 +289,7 @@ app.get("/api/indicators/:coinId", authenticateToken, authorizeTier("pro"), asyn
     const ema = EMA.calculate({ values: prices, period: 20 });
 
     res.json({
+        prices,
         rsi: rsi[rsi.length - 1],
         macd: macd[macd.length - 1],
         bollingerBands: bb[bb.length - 1],
@@ -371,6 +427,10 @@ app.get("/", (req, res) => {
     res.send("QuantumSpark Pro API is running...");
 });
 
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+module.exports = app;
