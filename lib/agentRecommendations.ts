@@ -26,6 +26,11 @@ export const REPO_TARGET_LABELS: Record<RepoTarget, string> = {
   backend: "/backend",
   app: "/app",
 };
+const REPO_TARGET_ORDER: RepoTarget[] = ["whole-repo", "frontend", "backend", "app"];
+
+function orderTargets(...targets: RepoTarget[]): RepoTarget[] {
+  return REPO_TARGET_ORDER.filter((target) => targets.includes(target));
+}
 
 export const REPO_TARGET_DESCRIPTIONS: Record<RepoTarget, string> = {
   "whole-repo": "Cross-cutting coverage for the full QuantumSpark Pro stack.",
@@ -44,7 +49,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Best first install because it improves reliability across frontend, backend, and Next.js code without changing your release flow.",
     launchUrl: "https://www.sonarsource.com/products/sonarqube/",
-    repoTargets: ["whole-repo", "frontend", "backend", "app"],
+    repoTargets: orderTargets("whole-repo", "frontend", "backend", "app"),
     repoNotes: {
       "whole-repo": "Use this first across the full repo to raise baseline quality on every PR.",
       frontend: "Catches maintainability issues and regressions in dashboard code.",
@@ -61,7 +66,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Strong second choice if you want to reduce open-source package risk across API, app, and tooling dependencies.",
     launchUrl: "https://www.endorlabs.com/",
-    repoTargets: ["whole-repo", "backend", "app"],
+    repoTargets: orderTargets("whole-repo", "backend", "app"),
     repoNotes: {
       "whole-repo": "Best for org-level dependency policy and package risk visibility.",
       backend: "Useful where the API depends on ecosystem packages and security posture matters most.",
@@ -77,7 +82,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Excellent when you want to ship user-facing features more safely in the trading dashboard and app experiences.",
     launchUrl: "https://launchdarkly.com/",
-    repoTargets: ["frontend", "app", "backend"],
+    repoTargets: orderTargets("frontend", "backend", "app"),
     repoNotes: {
       frontend: "Ideal for staged UI rollouts and rapid rollback of risky interface changes.",
       app: "Useful for controlled launches inside Mission Control and app-route features.",
@@ -93,7 +98,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Best when you want active security scanning against running app and backend endpoints instead of only static analysis.",
     launchUrl: "https://brightsec.com/",
-    repoTargets: ["backend", "app"],
+    repoTargets: orderTargets("backend", "app"),
     repoNotes: {
       backend: "Fits the Express API where runtime vulnerability testing matters.",
       app: "Helps validate exposed Next.js routes and authenticated flows.",
@@ -108,7 +113,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Best if release coordination becomes the bottleneck after code quality and security are under control.",
     launchUrl: "https://octopus.com/",
-    repoTargets: ["whole-repo", "backend", "app"],
+    repoTargets: orderTargets("whole-repo", "backend", "app"),
     repoNotes: {
       "whole-repo": "Useful once you need repeatable multi-environment delivery across the stack.",
       backend: "Helps with controlled backend promotion and rollback steps.",
@@ -124,7 +129,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "More valuable once you have meaningful traffic and on-call needs across backend and app surfaces.",
     launchUrl: "https://www.pagerduty.com/",
-    repoTargets: ["whole-repo", "backend", "app"],
+    repoTargets: orderTargets("whole-repo", "backend", "app"),
     repoNotes: {
       "whole-repo": "Best for connecting code changes to incidents once the platform is live.",
       backend: "Critical for API outages, latency spikes, and integration failures.",
@@ -140,7 +145,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Useful after the product is stable enough that optimization and growth experiments matter more than engineering safeguards.",
     launchUrl: "https://amplitude.com/",
-    repoTargets: ["frontend", "app"],
+    repoTargets: orderTargets("frontend", "app"),
     repoNotes: {
       frontend: "Tracks dashboard engagement, conversion, and user workflow friction.",
       app: "Measures Mission Control adoption and feature impact.",
@@ -155,7 +160,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Helpful for product and architecture alignment, but it will not directly raise code health or release safety.",
     launchUrl: "https://miro.com/",
-    repoTargets: ["whole-repo"],
+    repoTargets: orderTargets("whole-repo"),
     repoNotes: {
       "whole-repo": "Best for roadmap and system-design collaboration rather than execution automation.",
     },
@@ -169,7 +174,7 @@ export const AGENT_RECOMMENDATIONS: AgentRecommendation[] = [
     summary:
       "Most useful for large migration programs; lower priority for the current QuantumSpark Pro stack.",
     launchUrl: "https://packfiles.io/",
-    repoTargets: ["whole-repo"],
+    repoTargets: orderTargets("whole-repo"),
     repoNotes: {
       "whole-repo": "Consider later if you start a repo split, migration, or major modernization effort.",
     },

@@ -25,10 +25,12 @@ async function loadRecommendationsModule() {
 
   await writeFile(modulePath, outputText, "utf8");
 
-  return import(`${pathToFileURL(modulePath).href}?t=${Date.now()}`);
+  moduleVersion += 1;
+  return import(`${pathToFileURL(modulePath).href}?t=${moduleVersion}`);
 }
 
 const tempDirectories = [];
+let moduleVersion = 0;
 const recommendationsModule = await loadRecommendationsModule();
 
 test.after(async () => {
