@@ -16,7 +16,7 @@ const READINESS_CHECKS: ReadinessCheck[] = [
   { name: "Automated CI workflow", complete: true, category: "Reliability" },
   { name: "GitHub API connection", complete: true, category: "Growth" },
   { name: "Health check API", complete: true, category: "Reliability" },
-  { name: "Deployment checks", complete: false, category: "Reliability" },
+  { name: "Deployment checks", complete: true, category: "Reliability" },
   { name: "Security checks", complete: false, category: "Security" },
   { name: "AI recommendation engine", complete: false, category: "Growth" },
   { name: "Automated issue creation", complete: false, category: "Reliability" },
