@@ -19,6 +19,9 @@ const VALID_FOCUSES: AgentFocus[] = [
   "growth",
   "planning",
 ];
+const MAX_REPOSITORY_IDENTIFIER_LENGTH = 100;
+const OWNER_PATTERN = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/;
+const REPO_PATTERN = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
 
 export interface RepositorySnapshot {
   owner: string;
@@ -45,6 +48,12 @@ export interface RecommendationPayload {
   generatedAt: string;
   repository: RepositorySnapshot | null;
   recommendations: RecommendationResult[];
+}
+
+export interface RepositoryParameterValidationResult {
+  owner?: string;
+  repo?: string;
+  error?: string;
 }
 
 function dedupeTargets(targets: RepoTarget[]): RepoTarget[] {
@@ -76,6 +85,53 @@ export function parseTargets(value: string | null): RepoTarget[] {
   );
 
   return orderedTargets.length > 0 ? orderedTargets : DEFAULT_TARGETS;
+}
+
+export function validateRepositoryParameters(
+  owner: string | null | undefined,
+  repo: string | null | undefined
+): RepositoryParameterValidationResult {
+  const normalizedOwner = owner?.trim();
+  const normalizedRepo = repo?.trim();
+
+  if ((normalizedOwner && !normalizedRepo) || (!normalizedOwner && normalizedRepo)) {
+    return {
+      error: "owner and repo must be provided together",
+    };
+  }
+
+  if (!normalizedOwner || !normalizedRepo) {
+    return {};
+  }
+
+  if (normalizedOwner.length > 39) {
+    return {
+      error: "owner must be 39 characters or fewer",
+    };
+  }
+
+  if (normalizedRepo.length > MAX_REPOSITORY_IDENTIFIER_LENGTH) {
+    return {
+      error: "repo must be 100 characters or fewer",
+    };
+  }
+
+  if (!OWNER_PATTERN.test(normalizedOwner)) {
+    return {
+      error: "owner contains invalid characters",
+    };
+  }
+
+  if (!REPO_PATTERN.test(normalizedRepo)) {
+    return {
+      error: "repo contains invalid characters",
+    };
+  }
+
+  return {
+    owner: normalizedOwner,
+    repo: normalizedRepo,
+  };
 }
 
 export function buildRepositorySnapshot(

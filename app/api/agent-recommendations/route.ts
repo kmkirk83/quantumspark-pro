@@ -6,23 +6,34 @@ import {
   buildRepositorySnapshot,
   parseFocus,
   parseTargets,
+  validateRepositoryParameters,
 } from "@/lib/recommendationService";
 
 export async function GET(request: NextRequest) {
   const { searchParams } = request.nextUrl;
-  const owner = searchParams.get("owner")?.trim();
-  const repo = searchParams.get("repo")?.trim();
+  const repositoryParameters = validateRepositoryParameters(
+    searchParams.get("owner"),
+    searchParams.get("repo")
+  );
   const focus = parseFocus(searchParams.get("focus"));
   const targets = parseTargets(searchParams.get("targets"));
 
-  if ((owner && !repo) || (!owner && repo)) {
+  if (repositoryParameters.error) {
+    console.warn("Invalid agent recommendations request", {
+      owner: searchParams.get("owner"),
+      repo: searchParams.get("repo"),
+      error: repositoryParameters.error,
+    });
+
     return NextResponse.json(
       {
-        error: "owner and repo must be provided together",
+        error: repositoryParameters.error,
       },
       { status: 400 }
     );
   }
+
+  const { owner, repo } = repositoryParameters;
 
   try {
     const repository =

@@ -79,6 +79,43 @@ test("parseTargets keeps valid unique repo targets in supported order", () => {
   );
 });
 
+test("validateRepositoryParameters trims valid repository coordinates", () => {
+  assert.deepEqual(
+    recommendationService.validateRepositoryParameters(" vercel ", " next.js "),
+    {
+      owner: "vercel",
+      repo: "next.js",
+    }
+  );
+});
+
+test("validateRepositoryParameters rejects partial coordinates", () => {
+  assert.deepEqual(
+    recommendationService.validateRepositoryParameters("vercel", null),
+    {
+      error: "owner and repo must be provided together",
+    }
+  );
+});
+
+test("validateRepositoryParameters rejects invalid owner names", () => {
+  assert.deepEqual(
+    recommendationService.validateRepositoryParameters("-vercel", "next.js"),
+    {
+      error: "owner contains invalid characters",
+    }
+  );
+});
+
+test("validateRepositoryParameters rejects invalid repo names", () => {
+  assert.deepEqual(
+    recommendationService.validateRepositoryParameters("vercel", "next/js"),
+    {
+      error: "repo contains invalid characters",
+    }
+  );
+});
+
 test("buildRecommendationPayload returns top picks per target", () => {
   const payload = recommendationService.buildRecommendationPayload({
     focus: "security",
