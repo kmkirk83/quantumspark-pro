@@ -1,5 +1,17 @@
 const GITHUB_API_BASE = "https://api.github.com";
 
+function buildGitHubHeaders(token?: string): Record<string, string> {
+  const headers: Record<string, string> = {
+    Accept: "application/vnd.github+json",
+  };
+
+  if (token) {
+    headers.Authorization = "Bearer " + token;
+  }
+
+  return headers;
+}
+
 export interface RepoInfo {
   name: string;
   full_name: string;
@@ -37,10 +49,7 @@ export async function fetchRepoInfo(
   token?: string
 ): Promise<RepoInfo> {
   const url = `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`;
-  const headers: HeadersInit = { Accept: "application/vnd.github+json" };
-  if (token) {
-    headers["Authorization"] = "Bearer " + token;
-  }
+  const headers = buildGitHubHeaders(token);
 
   const response = await fetch(url, { headers, next: { revalidate: 60 } });
 
@@ -62,10 +71,7 @@ export async function fetchLatestWorkflowRun(
   token?: string
 ): Promise<WorkflowRun | null> {
   const url = `${GITHUB_API_BASE}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/actions/runs?per_page=1`;
-  const headers: HeadersInit = { Accept: "application/vnd.github+json" };
-  if (token) {
-    headers["Authorization"] = "Bearer " + token;
-  }
+  const headers = buildGitHubHeaders(token);
 
   const response = await fetch(url, { headers, next: { revalidate: 60 } });
 

@@ -1,3 +1,4 @@
+import { LaunchControlPanel } from "@/components/LaunchControlPanel";
 import { SystemHealth } from "@/components/SystemHealth";
 import type { ReadinessCheck } from "@/lib/scoring";
 
@@ -17,14 +18,15 @@ const READINESS_CHECKS: ReadinessCheck[] = [
   { name: "GitHub API connection", complete: true, category: "Growth" },
   { name: "Health check API", complete: true, category: "Reliability" },
   { name: "Deployment checks", complete: true, category: "Reliability" },
-  { name: "Security checks", complete: false, category: "Security" },
-  { name: "AI recommendation engine", complete: false, category: "Growth" },
-  { name: "Automated issue creation", complete: false, category: "Reliability" },
   {
-    name: "Production score updates",
-    complete: false,
-    category: "Performance",
+    name: "Interactive launch control workspace",
+    complete: true,
+    category: "User Experience",
   },
+  { name: "Persistent account storage", complete: false, category: "Reliability" },
+  { name: "Production billing configuration", complete: false, category: "Security" },
+  { name: "Frontend/backend contract hardening", complete: false, category: "User Experience" },
+  { name: "Release guardrails and smoke coverage", complete: false, category: "Reliability" },
 ];
 
 export default function MissionControlPage() {
@@ -76,6 +78,8 @@ export default function MissionControlPage() {
           ))}
         </ul>
       </section>
+
+      <LaunchControlPanel />
     </main>
   );
 }
