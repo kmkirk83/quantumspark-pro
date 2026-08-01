@@ -26,6 +26,15 @@ npm run lint
 npm run build
 ```
 
+## Mission Control launch control
+
+The root Next.js app now includes an interactive launch-readiness workspace that:
+
+- surfaces the highest-priority market-readiness blockers found in the repository
+- lets you track fix progress in-browser with per-step checklists
+- shows absolute file evidence for each recommendation
+- provides copyable validation commands for the affected surface
+
 ### Frontend
 
 ```bash
