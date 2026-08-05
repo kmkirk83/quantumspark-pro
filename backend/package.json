@@ -5,7 +5,8 @@
   "scripts": {
     "test": "node --test tests/*.test.js",
     "lint": "node --check server.js",
-    "build": "node scripts/verify-server.js"
+    "build": "node scripts/verify-server.js",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
