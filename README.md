@@ -1,14 +1,31 @@
 # QuantumSpark Pro
 
-QuantumSpark Pro is a monorepo with three app surfaces:
+AI trading platform delivered as a monorepo containing three surfaces:
 
-- `app/`, `components/`, `lib/`: Next.js 15 / React 19 Mission Control app
-- `frontend/`: vanilla JavaScript trading dashboard
-- `backend/`: Express.js API server
+- **Mission Control** (`app/`, `components/`, `lib/`) — Next.js 15 / React 19 operational console
+- **Frontend** — Vanilla JavaScript trading dashboard
+- **Backend** — Express.js API server
 
-## Install
+## Features
 
-Run installs from each project root:
+- Interactive launch-readiness workspace
+- Highest-priority market-readiness blocker tracking
+- Per-step checklists with file-level evidence
+- Copyable validation commands
+- GitHub repository and workflow metadata scanning
+
+## Tech Stack
+
+| Surface          | Technology                     |
+|------------------|--------------------------------|
+| Mission Control  | Next.js 15, React 19, TypeScript |
+| Frontend         | Vanilla JavaScript             |
+| Backend          | Express.js                     |
+| CI / Deploy      | GitHub Actions, Vercel         |
+
+## Installation
+
+Install dependencies from each project root:
 
 ```bash
 npm install
@@ -25,15 +42,6 @@ npm test
 npm run lint
 npm run build
 ```
-
-## Mission Control launch control
-
-The root Next.js app now includes an interactive launch-readiness workspace that:
-
-- surfaces the highest-priority market-readiness blockers found in the repository
-- lets you track fix progress in-browser with per-step checklists
-- shows absolute file evidence for each recommendation
-- provides copyable validation commands for the affected surface
 
 ### Frontend
 
@@ -56,4 +64,8 @@ npm run build
 ## Notes
 
 - `lib/githubScanner.ts` fetches GitHub repository metadata and the latest workflow run for Mission Control.
-- The root lockfile must stay in sync with `package.json` because CI uses `npm ci` for the Mission Control app.
+- Keep the root lockfile synchronized with `package.json`; CI uses `npm ci` for the Mission Control app.
+
+## License
+
+Proprietary / to be confirmed.
